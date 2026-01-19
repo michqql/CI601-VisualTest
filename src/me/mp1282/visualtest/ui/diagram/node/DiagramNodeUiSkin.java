@@ -12,6 +12,9 @@ import java.util.List;
 
 public class DiagramNodeUiSkin extends ExecutableUiSkin {
 
+    private static final Color DEFAULT_COLOUR  = Color.BLACK;
+    private static final Color SELECTED_COLOUR = Color.RED;
+
     public DiagramNodeUiSkin(DiagramNodeUi exe) {
         super(exe);
     }
@@ -26,7 +29,7 @@ public class DiagramNodeUiSkin extends ExecutableUiSkin {
 
         final List<DataPortArea> areas = ui.getCachedPortAreas();
         final DataPortArea hoveredDataPort = ui.hoveredDataPort.get();
-        /* Draw the data port line and type information */
+        /* Draw the data port type information */
         for(DataPortArea area : areas) {
             /* Show type information if the diagram node is hovered,
              * but not if a specific data port is being hovered,
@@ -67,5 +70,14 @@ public class DiagramNodeUiSkin extends ExecutableUiSkin {
                 /* Text => */ String.valueOf(node.executionCostProperty().get()),
                 /* X    => */ canvas.getWidth() - TOP_BOTTOM_BOX_PADDING,
                 /* Y    => */ canvas.getHeight() / 2);
+    }
+
+    @Override
+    protected void drawOutline(GraphicsContext gc) {
+        final DiagramNodeUi ui = (DiagramNodeUi) getSkinnable();
+        final boolean selected = ui.selectedProperty().get();
+
+        gc.setStroke(selected ? SELECTED_COLOUR : DEFAULT_COLOUR);
+        super.drawOutline(gc);
     }
 }

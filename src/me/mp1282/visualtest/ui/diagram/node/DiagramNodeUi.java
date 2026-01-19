@@ -1,25 +1,30 @@
 package me.mp1282.visualtest.ui.diagram.node;
 
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.Skin;
 import me.mp1282.visualtest.system.diagram.DiagramNode;
 import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
 import me.mp1282.visualtest.ui.executable.ExecutableUi;
+import me.mp1282.visualtest.ui.other.ISelectableUi;
 
 /* An ExecutableBackedUi has a DiagramNode as a model.
  * The UI component reflects the Diagram node's state.
  */
-public class DiagramNodeUi extends ExecutableUi {
+public class DiagramNodeUi extends ExecutableUi implements ISelectableUi {
 
     private final DiagramNode node;
     /* Properties */
     protected final ObjectProperty<DataPortArea> hoveredDataPort;
+    protected final BooleanProperty selected;
 
     public DiagramNodeUi(final DiagramNode node) {
         super(node.getExecutable());
         this.node = node;
         this.hoveredDataPort = new SimpleObjectProperty<>();
+        this.selected = new SimpleBooleanProperty();
 
         /* Bind the translation and dimension properties of this UI component
          * to the model (DiagramNode) so that changes are reflected.
@@ -31,11 +36,13 @@ public class DiagramNodeUi extends ExecutableUi {
 
         /* Tell the UI to redraw when:
          * - the hovered data port changes
-         * - the Ui is hovered
+         * - the UI is hovered
+         * - the UI is selected
          * - the execution cost changes
          */
         hoveredDataPort             .addListener((_, _, _) -> requestRedraw());
-        hoverProperty             ().addListener((_, _, _) -> requestRedraw());
+        hoverProperty()             .addListener((_, _, _) -> requestRedraw());
+        selected                    .addListener((_, _, _) -> requestRedraw());
         node.executionCostProperty().addListener((_, _, _) -> requestRedraw());
 
         /* Set a default dimension of 150x150 */
@@ -54,5 +61,10 @@ public class DiagramNodeUi extends ExecutableUi {
 
     public ObjectProperty<DataPortArea> hoveredDataPortProperty() {
         return hoveredDataPort;
+    }
+
+    @Override
+    public BooleanProperty selectedProperty() {
+        return selected;
     }
 }

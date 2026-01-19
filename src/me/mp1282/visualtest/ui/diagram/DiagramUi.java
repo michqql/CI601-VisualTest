@@ -5,27 +5,30 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.input.DragEvent;
-import javafx.scene.input.Dragboard;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.input.TransferMode;
+import javafx.scene.input.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.DiagramNode;
 import me.mp1282.visualtest.system.executable.Executable;
+import me.mp1282.visualtest.ui.diagram.helper.KeyboardHelper;
+import me.mp1282.visualtest.ui.diagram.helper.SelectionHelper;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeInfoUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
-import me.mp1282.visualtest.ui.diagram.port.PortConnectorUi;
+import me.mp1282.visualtest.ui.diagram.port.DataPortConnectorLineUi;
 import me.mp1282.visualtest.ui.executable.ExecutableUi;
+import me.mp1282.visualtest.ui.other.ISelectableUi;
 import me.mp1282.visualtest.util.DragContext;
 import me.mp1282.visualtest.util.Pair;
+
+import java.util.List;
 
 /*
  * The DiagramUi is responsible for managing DiagramNodeUis. This includes handling events for them.
@@ -33,10 +36,6 @@ import me.mp1282.visualtest.util.Pair;
 public class DiagramUi extends Pane {
 
     private final Diagram diagram;
-
-    private final Canvas gridCanvas;
-    private final Line connectingLine;
-    private final DiagramNodeInfoUi infoUi;
 
     private final DoubleProperty translateX;
     private final DoubleProperty translateY;
@@ -51,15 +50,26 @@ public class DiagramUi extends Pane {
     private final ObjectProperty<Pair<DiagramNodeUi, DataPortArea>> sourcePortPair;
     private final ObjectProperty<DiagramNodeUi> sourceFlowPort;
 
+    /* Helpers */
+    private final SelectionHelper selectionHelper;
+    private final KeyboardHelper keyboardHelper;
+
+    /* UI elements that aren't nodes and connected lines*/
+    private final Canvas gridCanvas;
+    private final Line connectingLine;
+    private final DiagramNodeInfoUi infoUi;
+
     public DiagramUi(Diagram diagram) {
         this.diagram = diagram;
-        this.gridCanvas = new Canvas();
-        this.connectingLine = new Line();
-        this.infoUi = new DiagramNodeInfoUi();
         this.translateX = new SimpleDoubleProperty();
         this.translateY = new SimpleDoubleProperty();
         this.sourcePortPair = new SimpleObjectProperty<>();
         this.sourceFlowPort = new SimpleObjectProperty<>();
+        this.selectionHelper = new SelectionHelper();
+        this.keyboardHelper = new KeyboardHelper(this);
+        this.gridCanvas = new Canvas();
+        this.connectingLine = new Line();
+        this.infoUi = new DiagramNodeInfoUi(selectionHelper.getList());
 
         gridCanvas.setMouseTransparent(true);
 
@@ -72,7 +82,7 @@ public class DiagramUi extends Pane {
 
         /* Ensure connecting line is not visible */
         connectingLine.setVisible(false);
-        sourcePortPair.addListener((obs, old, newVal) ->
+        sourcePortPair.addListener((_, _, newVal) ->
                 handleSourceDataPortChange(newVal));
 
         /* Ensure the diagram node info UI is on the right side of this UI */
@@ -89,7 +99,7 @@ public class DiagramUi extends Pane {
          * class gets to process the event, otherwise this method does not get called.
          */
         addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMouseClickInEmptyArea);
-        addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleMouseDragInEmptyArea);
+        addEventFilter (MouseEvent.MOUSE_DRAGGED, this::handleMouseDraggedInEmptyArea);
         addEventFilter (MouseEvent.MOUSE_MOVED,   this::handleMouseMoveInEmptyArea);
 
         /* Add event listeners to handle executable UI elements
@@ -101,31 +111,19 @@ public class DiagramUi extends Pane {
         setOnDragOver(this::handleDragOver);
         setOnDragDropped(this::handleDragDrop);
 
+        /* Add key event handlers */
+        keyboardHelper.addKeyHandler(keyEvent -> keyEvent.getCode() == KeyCode.DELETE, this::deleteSelected);
+
         getChildren().addAll(gridCanvas, connectingLine, infoUi);
     }
 
     private void handleDiagramNodeChange(ListChangeListener.Change<? extends DiagramNode> change) {
         while(change.next()) {
             /* Add UI components for any new diagram nodes */
-            for (DiagramNode node : change.getAddedSubList()) {
-                final ExecutableUi ui = new DiagramNodeUi(node);
-                /* Add event listeners to the component.
-                 *
-                 * Can't use mouseClicked for this component because it doesn't
-                 * get called for some reason, but mousePressed does.
-                 */
-                ui.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMouseClickForComponent);
-                ui.addEventHandler(MouseEvent.MOUSE_MOVED,   this::handleMouseMoveForComponent);
-                ui.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleMouseDraggedForComponent);
+            for (DiagramNode added : change.getAddedSubList())
+                createDiagramNodeUi(added);
 
-                /* Don't need to bind or set layoutX/Y here as the ExecutableBackedUi
-                 * class already binds these properties to the DiagramNode properties.
-                 */
-
-                getChildren().add(ui);
-            }
-
-            /* TODO: Remove UI components for any removed diagram nodes */
+            /* TODO: Handle removed items */
         }
     }
 
@@ -146,15 +144,17 @@ public class DiagramUi extends Pane {
         lastMouseX      = e.getX();
         lastMouseY      = e.getY();
 
-        /* If the user is currently connecting data ports, cancel this action */
-        sourcePortPair.set(null);
-        infoUi.nodeProperty().set(null);
+        if(e.isPrimaryButtonDown()) {
+            /* If the user is currently connecting data ports, cancel this action */
+            sourcePortPair.set(null);
+            selectionHelper.clear();
+        }
     }
 
     /* Handles the user dragging in an empty area (not an executable or other UI component)
      * Should translate the background grid and other UI components.
      */
-    private void handleMouseDragInEmptyArea(MouseEvent e) {
+    private void handleMouseDraggedInEmptyArea(MouseEvent e) {
         /* Only translate when middle mouse button is down */
         if(e.isMiddleButtonDown()) {
             double deltaX = e.getSceneX() - lastSceneMouseX;
@@ -167,19 +167,19 @@ public class DiagramUi extends Pane {
             translateX.set(translateX.get() + deltaX);
             translateY.set(translateY.get() + deltaY);
 
-            /* Call to redraw the grid */
-            redrawGridCanvas();
-
             /* Translate all UI components by new translate X and Y */
             for (Node node : getChildren()) {
-                if (node instanceof DiagramNodeUi || node instanceof PortConnectorUi) {
+                if (node instanceof DiagramNodeUi || node instanceof DataPortConnectorLineUi) {
                     node.setTranslateX(node.getTranslateX() + deltaX);
                     node.setTranslateY(node.getTranslateY() + deltaY);
                 }
             }
-        }
 
-        e.consume();
+            redrawGridCanvas();
+            redrawConnectingLine();
+
+            e.consume();
+        }
     }
 
     /* Handles the user moving the mouse within the Diagram ui */
@@ -196,7 +196,7 @@ public class DiagramUi extends Pane {
     }
 
     /* Handles the user clicking on a component */
-    private void handleMouseClickForComponent(MouseEvent e) {
+    private void handleMousePressedForNode(MouseEvent e) {
         lastSceneMouseX = e.getSceneX();
         lastSceneMouseY = e.getSceneY();
         /* Need to translate e.getX/Y() to parent coordinates,
@@ -218,45 +218,27 @@ public class DiagramUi extends Pane {
                 if (sourcePair == null) {
                     sourcePortPair.set(new Pair<>(ui, ui.hoveredDataPortProperty().get()));
                 } else {
-                    /* Check that the source port is the same type as the hovered port */
-                    if(sourcePair.value().getClass().equals(hoveredPort.getClass())) {
-                        boolean connectionValid = false;
+                    boolean connectionValid = diagram.connectDataPorts(
+                            /* Source Node => */ sourcePair.key().getNode(),
+                            /* Source Port => */ sourcePair.value().getDataPort(),
+                            /* Target Node => */ ui.getNode(),
+                            /* Target Port => */ hoveredPort.getDataPort());
 
-                        /* Make a data port connection if they are both data port areas */
-                        if(hoveredPort instanceof DataPortArea hoveredDataPortArea) {
-                            connectionValid = diagram.makeDataPortConnection(
-                                    /* Source Node => */ sourcePair.key().getNode(),
-                                    /* Source Port => */ ((DataPortArea) sourcePair.value()).getDataPort(),
-                                    /* Target Node => */ ui.getNode(),
-                                    /* Target Port => */ hoveredDataPortArea.getDataPort());
-                        } else { /* Make a flow connection */
-                            connectionValid = diagram.makeFlowPortConnection(sourcePair.key().getNode(), ui.getNode());
-                        }
+                    if (connectionValid) {
+                        createDataPortConnectorUi(sourcePair.key(), sourcePair.value(), ui, hoveredPort);
 
-                        if (connectionValid) {
-                            final PortConnectorUi connector = new PortConnectorUi(
-                                    sourcePair.key().getNode(),
-                                    sourcePair.value(),
-                                    ui.getNode(),
-                                    ui.hoveredDataPortProperty().get()
-                            );
-                            connector.setTranslateX(translateX.get());
-                            connector.setTranslateY(translateY.get());
-
-                            getChildren().add(connector);
-
-                            /* Set source variables back to null as they are no longer needed */
-                            sourcePortPair.set(null);
-                        }
+                        /* Set source variables back to null as they are no longer needed */
+                        sourcePortPair.set(null);
                     }
                 }
             } else {
-                infoUi.nodeProperty().set(ui.getNode());
+                if (e.isPrimaryButtonDown())
+                    selectionHelper.handleSelection(ui, e.isShiftDown());
             }
         }
     }
 
-    private void handleMouseMoveForComponent(MouseEvent e) {
+    private void handleMouseMoveForNode(MouseEvent e) {
         lastSceneMouseX = e.getSceneX();
         lastSceneMouseY = e.getSceneY();
         /* Need to translate e.getX/Y() to parent coordinates,
@@ -284,7 +266,7 @@ public class DiagramUi extends Pane {
         }
     }
 
-    private void handleMouseDraggedForComponent(MouseEvent e) {
+    private void handleMouseDraggedForNode(MouseEvent e) {
         if(e.getSource() instanceof DiagramNodeUi ui) {
             /* Only allow translation if the primary mouse button is down and
              * the user is not hovering over a data port
@@ -312,6 +294,15 @@ public class DiagramUi extends Pane {
 
                 e.consume();
             }
+        }
+    }
+
+    private void handleMousePressedForConnector(MouseEvent e) {
+        if(e.getSource() instanceof DataPortConnectorLineUi ui) {
+            if (e.isPrimaryButtonDown())
+                selectionHelper.handleSelection(ui, e.isShiftDown());
+
+            e.consume();
         }
     }
 
@@ -383,5 +374,53 @@ public class DiagramUi extends Pane {
             connectingLine.setEndX(lastMouseX);
             connectingLine.setEndY(lastMouseY);
         }
+    }
+
+    private void createDiagramNodeUi(DiagramNode node) {
+        final ExecutableUi ui = new DiagramNodeUi(node);
+        /* Add event listeners to the component.
+         *
+         * Can't use mouseClicked for this component because it doesn't
+         * get called for some reason, but mousePressed does.
+         */
+        ui.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMousePressedForNode);
+        ui.addEventHandler(MouseEvent.MOUSE_MOVED,   this::handleMouseMoveForNode);
+        ui.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleMouseDraggedForNode);
+
+        /* Don't need to bind or set layoutX/Y here as the ExecutableBackedUi
+         * class already binds these properties to the DiagramNode properties.
+         */
+
+        getChildren().add(ui);
+    }
+
+    private void createDataPortConnectorUi(DiagramNodeUi sourceNodeUi, DataPortArea sourcePort,
+                                           DiagramNodeUi targetNodeUi, DataPortArea targetPort) {
+        final DataPortConnectorLineUi connector = new DataPortConnectorLineUi(
+                sourceNodeUi, sourcePort, targetNodeUi, targetPort);
+        connector.setFocusTraversable(true); /* Allows this UI element to handle key events */
+        connector.setTranslateX(translateX.get());
+        connector.setTranslateY(translateY.get());
+
+        /* Add event handlers */
+        connector.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMousePressedForConnector);
+
+        getChildren().add(connector);
+    }
+
+    private void deleteSelected() {
+        ObservableList<ISelectableUi> selected = selectionHelper.getList();
+        for (ISelectableUi ui : selected) {
+            if(ui instanceof DiagramNodeUi nodeUi) {
+                DiagramNode node = nodeUi.getNode();
+                node.dataConnectionsProperty().keySet().forEach(port -> diagram.disconnectDataPort(node, port));
+            } else if(ui instanceof DataPortConnectorLineUi lineUi) {
+                diagram.disconnectDataPort(lineUi.getSourceNodeUi().getNode(), lineUi.getSourcePort().getDataPort());
+            }
+
+            getChildren().remove(ui);
+        }
+
+        selected.clear();
     }
 }

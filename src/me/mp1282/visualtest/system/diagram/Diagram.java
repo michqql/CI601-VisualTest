@@ -84,8 +84,8 @@ public final class Diagram {
     }
 
     /* Create a connection between two data ports */
-    public boolean makeDataPortConnection(DiagramNode source, DataPort sourcePort,
-                                          DiagramNode target, DataPort targetPort) {
+    public boolean connectDataPorts(DiagramNode source, DataPort sourcePort,
+                                    DiagramNode target, DataPort targetPort) {
 
         /* The source and target port cannot be both inputs or both outputs */
         if(sourcePort.inputPort() == targetPort.inputPort())
@@ -97,6 +97,13 @@ public final class Diagram {
             return true;
         }
         return false;
+    }
+
+    /* Removes a connection between two data ports provided one of them */
+    public void disconnectDataPort(DiagramNode source, DataPort sourcePort) {
+        Pair<DiagramNode, DataPort> pair = source.dataConnectionsProperty().remove(sourcePort);
+        if(pair != null)
+            pair.key().dataConnectionsProperty().remove(pair.value());
     }
 
     /* Check if two flow ports can be connected together */

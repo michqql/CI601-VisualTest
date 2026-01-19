@@ -54,12 +54,7 @@ public class ExecutableUiSkin extends SkinBase<ExecutableUi> {
         gc.setStroke(Color.BLACK);
         gc.setLineDashes(0);
         gc.setLineWidth(2);
-        gc.strokeRect(
-                /* x      => */ 0,
-                /* y      => */ TOP_BOTTOM_BOX_PADDING,
-                /* width  => */ canvas.getWidth(),
-                /* height => */ canvas.getHeight() - TOP_BOTTOM_BOX_PADDING * 2
-        );
+        drawOutline(gc);
 
         /* Draw the name of the executable centered */
         gc.setFill(Color.BLACK);
@@ -77,5 +72,15 @@ public class ExecutableUiSkin extends SkinBase<ExecutableUi> {
                     /* width  => */ 1,
                     /* height => */ DATA_PORT_LENGTH);
         }
+    }
+
+    protected void drawOutline(final GraphicsContext gc) {
+        /* Draw executable rectangle outline */
+        gc.strokeRect(
+                /* x      => */ 0,
+                /* y      => */ TOP_BOTTOM_BOX_PADDING,
+                /* width  => */ canvas.getWidth(),
+                /* height => */ canvas.getHeight() - TOP_BOTTOM_BOX_PADDING * 2
+        );
     }
 }

@@ -49,17 +49,17 @@ public class SelectionBoxRectUi extends Rectangle {
     }
 
     private void findSelectedNodes() {
-        for(Node node : ui.getChildren()) {
-            if(node instanceof ISelectableUi selectableUi) {
-                double worldToScreenX = node.getLayoutX() - node.getTranslateX();
-                double worldToScreenY = node.getLayoutY() - node.getTranslateY();
-
-                boolean selected = intersects(worldToScreenX, worldToScreenY,
-                        node.getBoundsInParent().getWidth(),
-                        node.getBoundsInParent().getHeight());
-
-                selectableUi.selectedProperty().set(selected);
-            }
-        }
+//        for(Node node : ui.getChildren()) {
+//            if(node instanceof ISelectableUi selectableUi) {
+//                double worldToScreenX = node.getLayoutX() - node.getTranslateX();
+//                double worldToScreenY = node.getLayoutY() - node.getTranslateY();
+//
+//                boolean selected = intersects(worldToScreenX, worldToScreenY,
+//                        node.getBoundsInParent().getWidth(),
+//                        node.getBoundsInParent().getHeight());
+//
+//                selectableUi.selectedProperty().set(selected);
+//            }
+//        }
     }
 }

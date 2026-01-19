@@ -143,8 +143,8 @@ public class DiagramUi extends Pane {
     private void handleMouseClickInEmptyArea(MouseEvent e) {
         lastSceneMouseX = e.getSceneX();
         lastSceneMouseY = e.getSceneY();
-        lastMouseX = e.getX();
-        lastMouseY = e.getY();
+        lastMouseX      = e.getX();
+        lastMouseY      = e.getY();
 
         /* If the user is currently connecting data ports, cancel this action */
         sourcePortPair.set(null);
@@ -159,10 +159,13 @@ public class DiagramUi extends Pane {
         if(e.isMiddleButtonDown()) {
             double deltaX = e.getSceneX() - lastSceneMouseX;
             double deltaY = e.getSceneY() - lastSceneMouseY;
-            translateX.set(translateX.get() + deltaX);
-            translateY.set(translateY.get() + deltaY);
             lastSceneMouseX = e.getSceneX();
             lastSceneMouseY = e.getSceneY();
+            lastMouseX      = e.getX();
+            lastMouseY      = e.getY();
+
+            translateX.set(translateX.get() + deltaX);
+            translateY.set(translateY.get() + deltaY);
 
             /* Call to redraw the grid */
             redrawGridCanvas();
@@ -181,11 +184,14 @@ public class DiagramUi extends Pane {
 
     /* Handles the user moving the mouse within the Diagram ui */
     private void handleMouseMoveInEmptyArea(MouseEvent e) {
+        lastSceneMouseX = e.getSceneX();
+        lastSceneMouseY = e.getSceneY();
+        lastMouseX      = e.getX();
+        lastMouseY      = e.getY();
+
         /* This function is called from the 'parent' space (DiagramUi),
          * so no need to convert from local to parent coordinates.
          */
-        lastMouseX = e.getX();
-        lastMouseY = e.getY();
         redrawConnectingLine();
     }
 
@@ -251,6 +257,15 @@ public class DiagramUi extends Pane {
     }
 
     private void handleMouseMoveForComponent(MouseEvent e) {
+        lastSceneMouseX = e.getSceneX();
+        lastSceneMouseY = e.getSceneY();
+        /* Need to translate e.getX/Y() to parent coordinates,
+         * as lastMouseX/Y are in parent space
+         */
+        Point2D pos = ((Node) e.getSource()).localToParent(e.getX(), e.getY());
+        lastMouseX = pos.getX();
+        lastMouseY = pos.getY();
+
         if(e.getSource() instanceof DiagramNodeUi ui) {
             /* For each data port, check if the user is currently hovering,
              * if so set the hovered property.
@@ -278,11 +293,23 @@ public class DiagramUi extends Pane {
                 final double deltaX = e.getSceneX() - lastSceneMouseX;
                 final double deltaY = e.getSceneY() - lastSceneMouseY;
 
+                lastSceneMouseX = e.getSceneX();
+                lastSceneMouseY = e.getSceneY();
+                /* Need to translate e.getX/Y() to parent coordinates,
+                 * as lastMouseX/Y are in parent space
+                 */
+                Point2D pos = ((Node) e.getSource()).localToParent(e.getX(), e.getY());
+                lastMouseX = pos.getX();
+                lastMouseY = pos.getY();
+
                 ui.layoutXProperty().set(ui.layoutXProperty().get() + deltaX);
                 ui.layoutYProperty().set(ui.layoutYProperty().get() + deltaY);
 
-                lastSceneMouseX = e.getSceneX();
-                lastSceneMouseY = e.getSceneY();
+                final Pair<DiagramNodeUi, DataPortArea> sourcePair = sourcePortPair.get();
+                if(sourcePair != null && sourcePair.key().equals(ui)) {
+                    redrawConnectingLine();
+                }
+
                 e.consume();
             }
         }

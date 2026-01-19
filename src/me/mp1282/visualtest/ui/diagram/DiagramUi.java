@@ -27,6 +27,9 @@ import me.mp1282.visualtest.ui.executable.ExecutableUi;
 import me.mp1282.visualtest.util.DragContext;
 import me.mp1282.visualtest.util.Pair;
 
+/*
+ * The DiagramUi is responsible for managing DiagramNodeUis. This includes handling events for them.
+ */
 public class DiagramUi extends Pane {
 
     private final Diagram diagram;
@@ -43,8 +46,6 @@ public class DiagramUi extends Pane {
     private double lastSceneMouseY;
     private double lastMouseX;
     private double lastMouseY;
-    private double lastPressedMouseX;
-    private double lastPressedMouseY;
 
     /* Variables to handle connecting of data/flow ports together */
     private final ObjectProperty<Pair<DiagramNodeUi, DataPortArea>> sourcePortPair;
@@ -59,6 +60,8 @@ public class DiagramUi extends Pane {
         this.translateY = new SimpleDoubleProperty();
         this.sourcePortPair = new SimpleObjectProperty<>();
         this.sourceFlowPort = new SimpleObjectProperty<>();
+
+        gridCanvas.setMouseTransparent(true);
 
         /* Add event listeners to the size of this UI component
          * that redraws the grid lines
@@ -82,13 +85,12 @@ public class DiagramUi extends Pane {
         diagram.translateYProperty().bind(translateY);
 
         /* Add event listeners to handle mouse events */
-        setOnMousePressed(this::handleMouseClickInEmptyArea);
         /* Using event filter here to process the mouse move event before the ExecutableBackedUi
          * class gets to process the event, otherwise this method does not get called.
          */
-        addEventFilter(MouseEvent.MOUSE_PRESSED, this::handleMousePressedInEmptyArea);
+        addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMouseClickInEmptyArea);
         addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleMouseDragInEmptyArea);
-        addEventFilter(MouseEvent.MOUSE_MOVED, this::handleMouseMove);
+        addEventFilter (MouseEvent.MOUSE_MOVED,   this::handleMouseMoveInEmptyArea);
 
         /* Add event listeners to handle executable UI elements
          * being dragged over the diagram UI. When they are dragged over
@@ -112,7 +114,9 @@ public class DiagramUi extends Pane {
                  * Can't use mouseClicked for this component because it doesn't
                  * get called for some reason, but mousePressed does.
                  */
-                ui.setOnMousePressed(this::handleMouseClickInComponent);
+                ui.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMouseClickForComponent);
+                ui.addEventHandler(MouseEvent.MOUSE_MOVED,   this::handleMouseMoveForComponent);
+                ui.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleMouseDraggedForComponent);
 
                 /* Don't need to bind or set layoutX/Y here as the ExecutableBackedUi
                  * class already binds these properties to the DiagramNode properties.
@@ -131,16 +135,6 @@ public class DiagramUi extends Pane {
         connectingLine.setVisible(pair != null);
     }
 
-    private void handleMousePressedInEmptyArea(MouseEvent e) {
-        /* Mouse X and Y positions are in 'parent' space
-         * as this function is called from the DiagramUi directly.
-         */
-        this.lastPressedMouseX = e.getX();
-        this.lastPressedMouseY = e.getY();
-
-        this.infoUi.nodeProperty().set(null);
-    }
-
     /* Handles the user clicking in an empty area.
      * Needed to set the initial mouse position before the user starts dragging,
      * so that the initial diff value is not massively inaccurate.
@@ -154,67 +148,7 @@ public class DiagramUi extends Pane {
 
         /* If the user is currently connecting data ports, cancel this action */
         sourcePortPair.set(null);
-    }
-
-    /* Handles the user clicking on a component */
-    private void handleMouseClickInComponent(MouseEvent e) {
-        lastSceneMouseX = e.getSceneX();
-        lastSceneMouseY = e.getSceneY();
-        /* Need to translate e.getX/Y() to parent coordinates,
-         * as lastMouseX/Y are in parent space
-         */
-        Point2D pos = ((Node) e.getSource()).localToParent(e.getX(), e.getY());
-        lastMouseX = pos.getX();
-        lastMouseY = pos.getY();
-
-        /* Checks if a diagram node was clicked */
-        if(e.getSource() instanceof DiagramNodeUi ui) {
-            /* Checks if a data port was clicked */
-            final DataPortArea hoveredPort = ui.getHoveredPort();
-            if(hoveredPort != null) {
-                /* If no current source data port is set, set this data port as the source.
-                 * Otherwise, handle 'connecting' the two data ports together.
-                 */
-                final Pair<DiagramNodeUi, DataPortArea> sourcePair = sourcePortPair.get();
-                if (sourcePair == null) {
-                    sourcePortPair.set(new Pair<>(ui, ui.getHoveredPort()));
-                } else {
-                    /* Check that the source port is the same type as the hovered port */
-                    if(sourcePair.value().getClass().equals(hoveredPort.getClass())) {
-                        boolean connectionValid = false;
-
-                        /* Make a data port connection if they are both data port areas */
-                        if(hoveredPort instanceof DataPortArea hoveredDataPortArea) {
-                            connectionValid = diagram.makeDataPortConnection(
-                                    /* Source Node => */ sourcePair.key().getNode(),
-                                    /* Source Port => */ ((DataPortArea) sourcePair.value()).getDataPort(),
-                                    /* Target Node => */ ui.getNode(),
-                                    /* Target Port => */ hoveredDataPortArea.getDataPort());
-                        } else { /* Make a flow connection */
-                            connectionValid = diagram.makeFlowPortConnection(sourcePair.key().getNode(), ui.getNode());
-                        }
-
-                        if (connectionValid) {
-                            final PortConnectorUi connector = new PortConnectorUi(
-                                    sourcePair.key().getNode(),
-                                    sourcePair.value(),
-                                    ui.getNode(),
-                                    ui.getHoveredPort()
-                            );
-                            connector.setTranslateX(translateX.get());
-                            connector.setTranslateY(translateY.get());
-
-                            getChildren().add(connector);
-
-                            /* Set source variables back to null as they are no longer needed */
-                            sourcePortPair.set(null);
-                        }
-                    }
-                }
-            } else {
-                infoUi.nodeProperty().set(ui.getNode());
-            }
-        }
+        infoUi.nodeProperty().set(null);
     }
 
     /* Handles the user dragging in an empty area (not an executable or other UI component)
@@ -243,6 +177,115 @@ public class DiagramUi extends Pane {
         }
 
         e.consume();
+    }
+
+    /* Handles the user moving the mouse within the Diagram ui */
+    private void handleMouseMoveInEmptyArea(MouseEvent e) {
+        /* This function is called from the 'parent' space (DiagramUi),
+         * so no need to convert from local to parent coordinates.
+         */
+        lastMouseX = e.getX();
+        lastMouseY = e.getY();
+        redrawConnectingLine();
+    }
+
+    /* Handles the user clicking on a component */
+    private void handleMouseClickForComponent(MouseEvent e) {
+        lastSceneMouseX = e.getSceneX();
+        lastSceneMouseY = e.getSceneY();
+        /* Need to translate e.getX/Y() to parent coordinates,
+         * as lastMouseX/Y are in parent space
+         */
+        Point2D pos = ((Node) e.getSource()).localToParent(e.getX(), e.getY());
+        lastMouseX = pos.getX();
+        lastMouseY = pos.getY();
+
+        /* Checks if a diagram node was clicked */
+        if(e.getSource() instanceof DiagramNodeUi ui) {
+            /* Checks if a data port was clicked */
+            final DataPortArea hoveredPort = ui.hoveredDataPortProperty().get();
+            if(hoveredPort != null) {
+                /* If no current source data port is set, set this data port as the source.
+                 * Otherwise, handle 'connecting' the two data ports together.
+                 */
+                final Pair<DiagramNodeUi, DataPortArea> sourcePair = sourcePortPair.get();
+                if (sourcePair == null) {
+                    sourcePortPair.set(new Pair<>(ui, ui.hoveredDataPortProperty().get()));
+                } else {
+                    /* Check that the source port is the same type as the hovered port */
+                    if(sourcePair.value().getClass().equals(hoveredPort.getClass())) {
+                        boolean connectionValid = false;
+
+                        /* Make a data port connection if they are both data port areas */
+                        if(hoveredPort instanceof DataPortArea hoveredDataPortArea) {
+                            connectionValid = diagram.makeDataPortConnection(
+                                    /* Source Node => */ sourcePair.key().getNode(),
+                                    /* Source Port => */ ((DataPortArea) sourcePair.value()).getDataPort(),
+                                    /* Target Node => */ ui.getNode(),
+                                    /* Target Port => */ hoveredDataPortArea.getDataPort());
+                        } else { /* Make a flow connection */
+                            connectionValid = diagram.makeFlowPortConnection(sourcePair.key().getNode(), ui.getNode());
+                        }
+
+                        if (connectionValid) {
+                            final PortConnectorUi connector = new PortConnectorUi(
+                                    sourcePair.key().getNode(),
+                                    sourcePair.value(),
+                                    ui.getNode(),
+                                    ui.hoveredDataPortProperty().get()
+                            );
+                            connector.setTranslateX(translateX.get());
+                            connector.setTranslateY(translateY.get());
+
+                            getChildren().add(connector);
+
+                            /* Set source variables back to null as they are no longer needed */
+                            sourcePortPair.set(null);
+                        }
+                    }
+                }
+            } else {
+                infoUi.nodeProperty().set(ui.getNode());
+            }
+        }
+    }
+
+    private void handleMouseMoveForComponent(MouseEvent e) {
+        if(e.getSource() instanceof DiagramNodeUi ui) {
+            /* For each data port, check if the user is currently hovering,
+             * if so set the hovered property.
+             */
+            for (DataPortArea area : ui.getCachedPortAreas()) {
+                if (area.isInside(e.getX(), e.getY())) {
+                    ui.hoveredDataPortProperty().set(area);
+                    return;
+                }
+            }
+
+            /* No data port is being hovered if the code has reached here,
+             * thus set the hovered property to null
+             */
+            ui.hoveredDataPortProperty().set(null);
+        }
+    }
+
+    private void handleMouseDraggedForComponent(MouseEvent e) {
+        if(e.getSource() instanceof DiagramNodeUi ui) {
+            /* Only allow translation if the primary mouse button is down and
+             * the user is not hovering over a data port
+             */
+            if(e.isPrimaryButtonDown() && ui.hoveredDataPortProperty().get() == null) {
+                final double deltaX = e.getSceneX() - lastSceneMouseX;
+                final double deltaY = e.getSceneY() - lastSceneMouseY;
+
+                ui.layoutXProperty().set(ui.layoutXProperty().get() + deltaX);
+                ui.layoutYProperty().set(ui.layoutYProperty().get() + deltaY);
+
+                lastSceneMouseX = e.getSceneX();
+                lastSceneMouseY = e.getSceneY();
+                e.consume();
+            }
+        }
     }
 
     /* Handles the user dragging something over the diagram UI.
@@ -276,16 +319,6 @@ public class DiagramUi extends Pane {
                 System.err.println("Error: Dragged object is not an Executable");
             }
         }
-    }
-
-    /* Handles the user moving the mouse within the Diagram ui */
-    private void handleMouseMove(MouseEvent e) {
-        /* This function is called from the 'parent' space (DiagramUi),
-         * so no need to convert from local to parent coordinates.
-         */
-        lastMouseX = e.getX();
-        lastMouseY = e.getY();
-        redrawConnectingLine();
     }
 
     private void redrawGridCanvas() {

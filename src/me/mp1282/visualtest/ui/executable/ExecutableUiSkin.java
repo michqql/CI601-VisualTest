@@ -24,6 +24,8 @@ public class ExecutableUiSkin extends SkinBase<ExecutableUi> {
 
         this.canvas = new Canvas(executableUi.getWidth(), executableUi.getHeight());
 
+        /* Ensure the canvas cannot capture mouse events */
+        canvas.setMouseTransparent(true);
         /* Ensure the canvas is always the same size as the control we are skinning */
         canvas.widthProperty().bind(executableUi.widthProperty()); /* canvas.width = ui.width */
         canvas.heightProperty().bind(executableUi.heightProperty());

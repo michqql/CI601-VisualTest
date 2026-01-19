@@ -25,7 +25,7 @@ public class DiagramNodeUiSkin extends ExecutableUiSkin {
         final boolean hovered = ui.hoverProperty().get();
 
         final List<DataPortArea> areas = ui.getCachedPortAreas();
-        final DataPortArea hoveredDataPort = ui.hoveredDataPortProperty.get();
+        final DataPortArea hoveredDataPort = ui.hoveredDataPort.get();
         /* Draw the data port line and type information */
         for(DataPortArea area : areas) {
             /* Show type information if the diagram node is hovered,

@@ -6,6 +6,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.control.Skin;
 import me.mp1282.visualtest.system.diagram.DiagramNode;
+import me.mp1282.visualtest.ui.diagram.IDiagramElement;
 import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
 import me.mp1282.visualtest.ui.executable.ExecutableUi;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
@@ -13,7 +14,7 @@ import me.mp1282.visualtest.ui.other.ISelectableUi;
 /* An ExecutableBackedUi has a DiagramNode as a model.
  * The UI component reflects the Diagram node's state.
  */
-public class DiagramNodeUi extends ExecutableUi implements ISelectableUi {
+public class DiagramNodeUi extends ExecutableUi implements ISelectableUi, IDiagramElement {
 
     private final DiagramNode node;
     /* Properties */
@@ -66,5 +67,10 @@ public class DiagramNodeUi extends ExecutableUi implements ISelectableUi {
     @Override
     public BooleanProperty selectedProperty() {
         return selected;
+    }
+
+    @Override
+    public int getZOrder() {
+        return 0;
     }
 }

@@ -2,30 +2,36 @@ package me.mp1282.visualtest.ui.diagram.helper;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
+import me.mp1282.visualtest.system.diagram.DiagramNode;
 import me.mp1282.visualtest.ui.diagram.DiagramUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
+import me.mp1282.visualtest.ui.diagram.port.DataPortConnectorLineUi;
 import me.mp1282.visualtest.util.Pair;
 
 public class ConnectionHelper {
+
+    private static final Color DATA_PORT_LINE_COLOUR      = Color.BLACK;
+    private static final Color EXECUTION_PATH_LINE_COLOUR = Color.GREEN;
 
     private final DiagramUi diagramUi;
     private final Line tempConnectionLine;
 
     /* Variables to handle connecting of data/flow ports together */
-    private final ObjectProperty<Pair<DiagramNodeUi, DataPortArea>> sourcePortPair;
-    private final ObjectProperty<DiagramNodeUi> sourceFlowPort;
+    private final ObjectProperty<Pair<DiagramNodeUi, DataPortArea>> dataPortSource;
+    private final ObjectProperty<DiagramNodeUi> executionPathSourceNode;
 
     public ConnectionHelper(DiagramUi diagramUi) {
-        this.diagramUi = diagramUi;
-        this.tempConnectionLine = new Line();
-
-        this.sourcePortPair = new SimpleObjectProperty<>();
-        this.sourceFlowPort = new SimpleObjectProperty<>();
+        this.diagramUi               = diagramUi;
+        this.tempConnectionLine      = new Line();
+        this.dataPortSource          = new SimpleObjectProperty<>();
+        this.executionPathSourceNode = new SimpleObjectProperty<>();
 
         tempConnectionLine.setVisible(false);
-        sourcePortPair.addListener((_, _, _) -> redrawConnectingLine());
+        dataPortSource.addListener((_, _, _) -> redrawConnectingLine());
     }
 
     public Line getTempConnectionLine() {
@@ -38,45 +44,91 @@ public class ConnectionHelper {
      * @param clickedNodeUi The {@code me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi} that was clicked by the user.
      * @return {@code true} if this function handled the request.
      */
-    public boolean handleConnecting(DiagramNodeUi clickedNodeUi) {
+    public boolean handleDataPortConnecting(DiagramNodeUi clickedNodeUi) {
+        /* Ensure that the user is not currently connecting an execution path */
+        if(executionPathSourceNode.get() != null)
+            return false;
+
         /* Check that a data port is being hovered */
         final DataPortArea hoveredPort = clickedNodeUi.hoveredDataPortProperty().get();
-        if(hoveredPort != null) {
-            /* If no current source data port is set, set this data port as the source.
-             * Otherwise, handle 'connecting' the two data ports together.
-             */
-            final Pair<DiagramNodeUi, DataPortArea> sourcePair = sourcePortPair.get();
-            if (sourcePair == null) {
-                sourcePortPair.set(new Pair<>(clickedNodeUi, clickedNodeUi.hoveredDataPortProperty().get()));
-            } else {
-                boolean connectionValid = diagramUi.getDiagram().connectDataPorts(
-                        /* Source Node => */ sourcePair.key().getNode(),
-                        /* Source Port => */ sourcePair.value().getDataPort(),
-                        /* Target Node => */ clickedNodeUi.getNode(),
-                        /* Target Port => */ hoveredPort.getDataPort());
+        if(hoveredPort == null)
+            return false;
 
-                if (connectionValid) {
-                    diagramUi.rebuildDataPortConnections();
+        /* If no current source data port is set, set this data port as the source.
+         * Otherwise, handle 'connecting' the two data ports together.
+         */
+        final Pair<DiagramNodeUi, DataPortArea> sourcePair = dataPortSource.get();
+        if (sourcePair == null) {
+            dataPortSource.set(new Pair<>(clickedNodeUi, clickedNodeUi.hoveredDataPortProperty().get()));
+        } else {
+            boolean connected = diagramUi.getDiagram().connectDataPorts(
+                    /* Source Node => */ sourcePair.key().getNode(),
+                    /* Source Port => */ sourcePair.value().getDataPort(),
+                    /* Target Node => */ clickedNodeUi.getNode(),
+                    /* Target Port => */ hoveredPort.getDataPort());
 
-                    /* Set source variables back to null as they are no longer needed */
-                    sourcePortPair.set(null);
-                }
+            if (connected) {
+                diagramUi.rebuildDataPortConnections();
+
+                /* Set source variables back to null as they are no longer needed */
+                dataPortSource.set(null);
             }
-
-            /* Handled this event */
-            return true;
         }
 
-        /* Not handled - nothing changed */
-        return false;
+        /* Handled this event */
+        return true;
+    }
+
+    /**
+     * Tries to handle connecting the execution path of nodes.
+     *
+     * @param nodeUi The {@code me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi} that was clicked by the user
+     *               or the action was initiated against.
+     * @return {@code true} if this function handled the request.
+     */
+    public boolean handleExecutionPathConnecting(DiagramNodeUi nodeUi, boolean initial) {
+        /* Ensure that the user is not currently connecting data ports */
+        if(dataPortSource.get() != null)
+            return false;
+
+        /* Ensure that if initial is false, an execution path source node is already provided */
+        if(!initial && executionPathSourceNode.get() == null)
+            return false;
+
+        /* Ensure a data port is NOT being hovered */
+        if(nodeUi.hoveredDataPortProperty().get() != null)
+            return false;
+
+        /* If the source node for the execution path is currently null, set it.
+         * Otherwise, create the execution path connection between the two nodes.
+         */
+        if(executionPathSourceNode.get() == null) {
+            executionPathSourceNode.set(nodeUi);
+        } else {
+            final DiagramNode source = executionPathSourceNode.get().getNode();
+            final DiagramNode target = nodeUi.getNode();
+
+            boolean connected = diagramUi.getDiagram().connectExecutionPath(source, target);
+
+            if(connected) {
+                diagramUi.rebuildExecutionPathConnections();
+
+                /* Set source variables back to null as they are no longer needed */
+                executionPathSourceNode.set(null);
+            }
+        }
+
+        /* Request handled */
+        return true;
     }
 
     public void cancelConnection() {
-        sourcePortPair.set(null);
+        dataPortSource.set(null);
+        executionPathSourceNode.set(null);
     }
 
     public void redrawConnectingLine() {
-        final Pair<DiagramNodeUi, DataPortArea> sourcePair = sourcePortPair.get();
+        final Pair<DiagramNodeUi, DataPortArea> sourcePair = dataPortSource.get();
 
         if(sourcePair != null) {
             /* Draw line between source data port and mouse cursor */

@@ -29,8 +29,8 @@ public class DiagramNode {
      */
     private final IntegerProperty cachedExecutionCost;
     /* Flow connections */
-    private final ObjectProperty<DiagramNode> inputFlowNode;
-    private final ObjectProperty<DiagramNode> outputFlowNode;
+    private final ObjectProperty<DiagramNode> executionPathNodeBefore;
+    private final ObjectProperty<DiagramNode> executionPathNodeAfter;
 
     /* Executable data - static data that is entered by the user as a property */
     private String comment;
@@ -42,16 +42,16 @@ public class DiagramNode {
     private final DoubleProperty height;
 
     public DiagramNode(Executable executable) {
-        this.uuid = UUID.randomUUID();
-        this.executable = executable;
+        this.uuid                        = UUID.randomUUID();
+        this.executable                  = executable;
         this.sourceToTargetConnectionMap = FXCollections.observableHashMap();
-        this.cachedExecutionCost = new SimpleIntegerProperty();
-        this.inputFlowNode = new SimpleObjectProperty<>();
-        this.outputFlowNode = new SimpleObjectProperty<>();
-        this.x = new SimpleDoubleProperty();
-        this.y = new SimpleDoubleProperty();
-        this.width = new SimpleDoubleProperty();
-        this.height = new SimpleDoubleProperty();
+        this.cachedExecutionCost         = new SimpleIntegerProperty();
+        this.executionPathNodeBefore     = new SimpleObjectProperty<>();
+        this.executionPathNodeAfter      = new SimpleObjectProperty<>();
+        this.x                           = new SimpleDoubleProperty();
+        this.y                           = new SimpleDoubleProperty();
+        this.width                       = new SimpleDoubleProperty();
+        this.height                      = new SimpleDoubleProperty();
 
         /* Recalculate execution cost when connections change */
         this.sourceToTargetConnectionMap.addListener(this::handleMapChange);
@@ -78,12 +78,12 @@ public class DiagramNode {
         return cachedExecutionCost;
     }
 
-    public ObjectProperty<DiagramNode> inputFlowNodeProperty() {
-        return inputFlowNode;
+    public ObjectProperty<DiagramNode> executionPathNodeBeforeProperty() {
+        return executionPathNodeBefore;
     }
 
-    public ObjectProperty<DiagramNode> outputFlowNodeProperty() {
-        return outputFlowNode;
+    public ObjectProperty<DiagramNode> executionPathNodeAfterProperty() {
+        return executionPathNodeAfter;
     }
 
     public String getComment() {

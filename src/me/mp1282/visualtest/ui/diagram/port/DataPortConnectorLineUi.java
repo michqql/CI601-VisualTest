@@ -2,17 +2,15 @@ package me.mp1282.visualtest.ui.diagram.port;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.collections.MapChangeListener;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.StrokeLineCap;
 import me.mp1282.visualtest.system.diagram.DiagramNode;
-import me.mp1282.visualtest.system.executable.DataPort;
+import me.mp1282.visualtest.ui.diagram.IDiagramElement;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
-import me.mp1282.visualtest.util.Pair;
 
-public class DataPortConnectorLineUi extends Line implements ISelectableUi {
+public class DataPortConnectorLineUi extends Line implements IConnectorUi, ISelectableUi, IDiagramElement {
 
     private static final Color DEFAULT_COLOUR  = Color.BLACK;
     private static final Color SELECTED_COLOUR = Color.RED;
@@ -48,8 +46,8 @@ public class DataPortConnectorLineUi extends Line implements ISelectableUi {
          */
         startXProperty().bind(sourceNode.xProperty().add(sourcePort.getMidX()));
         startYProperty().bind(sourceNode.yProperty().add(sourcePort.getMidY()));
-        endXProperty().bind(targetNode.xProperty().add(targetPort.getMidX()));
-        endYProperty().bind(targetNode.yProperty().add(targetPort.getMidY()));
+        endXProperty  ().bind(targetNode.xProperty().add(targetPort.getMidX()));
+        endYProperty  ().bind(targetNode.yProperty().add(targetPort.getMidY()));
 
         hoverProperty().addListener((_, _, hovered) -> {
             setStrokeWidth(hovered ? HOVERED_WIDTH : DEFAULT_WIDTH);
@@ -93,5 +91,10 @@ public class DataPortConnectorLineUi extends Line implements ISelectableUi {
                 (sourcePort.equals(areaB) && targetPort.equals(areaA));
 
         return nodesEqual && portsEqual;
+    }
+
+    @Override
+    public int getZOrder() {
+        return 1;
     }
 }

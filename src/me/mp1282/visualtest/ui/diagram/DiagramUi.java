@@ -2,6 +2,7 @@ package me.mp1282.visualtest.ui.diagram;
 
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Point2D;
@@ -23,6 +24,8 @@ import me.mp1282.visualtest.ui.diagram.node.DiagramNodeInfoUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
 import me.mp1282.visualtest.ui.diagram.port.DataPortConnectorLineUi;
+import me.mp1282.visualtest.ui.diagram.port.ExecutionPathConnectorLineUi;
+import me.mp1282.visualtest.ui.diagram.port.IConnectorUi;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
 import me.mp1282.visualtest.util.DragContext;
 import me.mp1282.visualtest.util.PropertyHelper;
@@ -39,6 +42,7 @@ public class DiagramUi extends Pane {
     /* Child UI element variables (nodes & connectors) */
     private final Map<DiagramNode, DiagramNodeUi> nodeToUiMap;
     private final Set<DataPortConnectorLineUi> dataPortConnectors;
+    private final Set<ExecutionPathConnectorLineUi> executionPathConnectors;
 
     private final DoubleProperty translateX;
     private final DoubleProperty translateY;
@@ -62,6 +66,7 @@ public class DiagramUi extends Pane {
         /* Main UI elements */
         this.nodeToUiMap = new HashMap<>();
         this.dataPortConnectors = new HashSet<>();
+        this.executionPathConnectors = new HashSet<>();
         /* Diagram state */
         this.translateX = new SimpleDoubleProperty();
         this.translateY = new SimpleDoubleProperty();
@@ -167,7 +172,7 @@ public class DiagramUi extends Pane {
 
             /* Translate all UI components by new translate X and Y */
             for (Node node : getChildren()) {
-                if (node instanceof DiagramNodeUi || node instanceof DataPortConnectorLineUi) {
+                if (node instanceof IDiagramElement) {
                     node.setTranslateX(node.getTranslateX() + deltaX);
                     node.setTranslateY(node.getTranslateY() + deltaY);
                 }
@@ -207,7 +212,13 @@ public class DiagramUi extends Pane {
         /* Checks if a diagram node was clicked */
         if(e.getSource() instanceof DiagramNodeUi ui) {
             /* Try to handle connecting data ports - ONLY if the primary mouse button was pressed */
-            if(e.isPrimaryButtonDown() && connectionHelper.handleConnecting(ui)) {
+            if(e.isPrimaryButtonDown() && connectionHelper.handleDataPortConnecting(ui)) {
+                e.consume();
+                return;
+            }
+
+            /* Next, see if the execution path can be connected - ONLY if the primary mouse button was pressed */
+            if(e.isPrimaryButtonDown() && connectionHelper.handleExecutionPathConnecting(ui, false)) {
                 e.consume();
                 return;
             }
@@ -278,7 +289,7 @@ public class DiagramUi extends Pane {
     }
 
     private void handleMousePressedForConnector(MouseEvent e) {
-        if(e.getSource() instanceof DataPortConnectorLineUi ui) {
+        if(e.getSource() instanceof IConnectorUi ui) {
             if (e.isPrimaryButtonDown())
                 selectionHelper.handleSelection(ui, e.isShiftDown());
 
@@ -345,7 +356,6 @@ public class DiagramUi extends Pane {
 
     private void createDiagramNodeUi(DiagramNode node) {
         final DiagramNodeUi ui = new DiagramNodeUi(node);
-        nodeToUiMap.put(node, ui);
 
         /* Add event listeners to the component.
          *
@@ -369,10 +379,15 @@ public class DiagramUi extends Pane {
          */
         if(node.getExecutable().getNumberOfOutputs() == 0) {
             MenuItem executionPathItem = new MenuItem("Specify 'Execution Path'");
+            /* TODO: disable this menu item if it doesn't make sense as an action the user can take */
+            executionPathItem.setOnAction(_ -> connectionHelper.handleExecutionPathConnecting(ui, true));
+
             contextMenu.getItems().add(executionPathItem);
         }
 
         getChildren().add(ui);
+        sortChildrenByZOrder();
+        nodeToUiMap.put(node, ui);
     }
 
     private void createDataPortConnectorUi(DiagramNodeUi sourceNodeUi, DataPortArea sourcePort,
@@ -385,7 +400,6 @@ public class DiagramUi extends Pane {
 
         final DataPortConnectorLineUi connector = new DataPortConnectorLineUi(
                 sourceNodeUi, sourcePort, targetNodeUi, targetPort);
-        connector.setFocusTraversable(true); /* Allows this UI element to handle key events */
         connector.setTranslateX(translateX.get());
         connector.setTranslateY(translateY.get());
 
@@ -393,7 +407,27 @@ public class DiagramUi extends Pane {
         connector.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMousePressedForConnector);
 
         getChildren().add(connector);
+        sortChildrenByZOrder();
         dataPortConnectors.add(connector);
+    }
+
+    private void createExecutionPathConnectorUi(DiagramNodeUi before, DiagramNodeUi after) {
+        /* Check if there is already a UI element for this connection */
+        for(ExecutionPathConnectorLineUi ui : executionPathConnectors) {
+            if(ui.equals(before, after))
+                return;
+        }
+
+        final ExecutionPathConnectorLineUi connector = new ExecutionPathConnectorLineUi(before, after);
+        connector.setTranslateX(translateX.get());
+        connector.setTranslateY(translateY.get());
+
+        /* Add event handlers */
+        connector.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMousePressedForConnector);
+
+        getChildren().add(connector);
+        sortChildrenByZOrder();
+        executionPathConnectors.add(connector);
     }
 
     public void rebuildDataPortConnections() {
@@ -427,6 +461,33 @@ public class DiagramUi extends Pane {
         }
     }
 
+    public void rebuildExecutionPathConnections() {
+        /* Firstly remove all current data port connector UI elements */
+        getChildren().removeIf(ExecutionPathConnectorLineUi.class::isInstance);
+        executionPathConnectors.clear();
+
+        /* Loop over each DiagramNode in the Diagram */
+        for (DiagramNode node : diagram.nodesProperty()) {
+            final DiagramNodeUi currentNodeUi = nodeToUiMap.get(node);
+            if(currentNodeUi == null) /* TODO: If this is null we have a serious problem */
+                throw new RuntimeException("DiagramNode does not have a DiagramNodeUi when rebuilding execution path! (A)");
+
+            final DiagramNode before = node.executionPathNodeBeforeProperty().get();
+            if(before != null) {
+                final DiagramNodeUi beforeNodeUi = nodeToUiMap.get(before);
+                if(beforeNodeUi != null)
+                    createExecutionPathConnectorUi(beforeNodeUi, currentNodeUi);
+            }
+
+            final DiagramNode after = node.executionPathNodeAfterProperty().get();
+            if(after != null) {
+                final DiagramNodeUi afterNodeUi = nodeToUiMap.get(after);
+                if(afterNodeUi != null)
+                    createExecutionPathConnectorUi(currentNodeUi, afterNodeUi);
+            }
+        }
+    }
+
     private void deleteSelected() {
         ObservableList<ISelectableUi> selected = selectionHelper.getList();
         for (ISelectableUi ui : selected) {
@@ -448,8 +509,15 @@ public class DiagramUi extends Pane {
 
                 diagram.nodesProperty().remove(node);
                 nodeToUiMap.remove(node);
+
             } else if(ui instanceof DataPortConnectorLineUi lineUi) {
+                /* Calling the disconnect logic on the source port will disconnect the target port too */
                 diagram.disconnectDataPort(lineUi.getSourceNodeUi().getNode(), lineUi.getSourcePort().getDataPort());
+
+            } else if(ui instanceof ExecutionPathConnectorLineUi lineUi) {
+                /* Calling the disconnect logic on the source port will disconnect the target port too */
+                diagram.disconnectExecutionPath(lineUi.getSourceNodeUi().getNode());
+
             }
 
             getChildren().remove(ui);
@@ -457,5 +525,18 @@ public class DiagramUi extends Pane {
 
         selected.clear();
         rebuildDataPortConnections();
+        rebuildExecutionPathConnections();
+    }
+
+    private void sortChildrenByZOrder() {
+        FXCollections.sort(getChildren(), (a, b) -> {
+            /* Return negative if a should be BELOW b,
+             * return positive if a should be ABOVE b
+             */
+            int priorityA = a instanceof IDiagramElement ui ? ui.getZOrder() : 100;
+            int priorityB = b instanceof IDiagramElement ui ? ui.getZOrder() : 100;
+
+            return priorityB - priorityA;
+        });
     }
 }

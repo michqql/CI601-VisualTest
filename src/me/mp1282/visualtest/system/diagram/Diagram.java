@@ -73,14 +73,22 @@ public final class Diagram {
     }
 
     /* Create a flow connection between two flow ports */
-    public boolean makeFlowPortConnection(DiagramNode source, DiagramNode target) {
+    public boolean connectExecutionPath(DiagramNode source, DiagramNode target) {
 
-        if(canConnectFlowPorts(source, target) && canConnectDataPorts(source, target)) {
-            source.outputFlowNodeProperty().set(target);
-            target.inputFlowNodeProperty().set(source);
+        if(canConnectExecutionPath(source, target) && canConnectDataPorts(source, target)) {
+            source.executionPathNodeAfterProperty().set(target);
+            target.executionPathNodeBeforeProperty().set(source);
             return true;
         }
         return false;
+    }
+
+    public void disconnectExecutionPath(DiagramNode node) {
+        final DiagramNode before = node.executionPathNodeBeforeProperty().get();
+        final DiagramNode after  = node.executionPathNodeAfterProperty().get();
+
+        if(before != null) before.executionPathNodeAfterProperty().set(null);
+        if(after  != null) after .executionPathNodeBeforeProperty().set(null);
     }
 
     /* Create a connection between two data ports */
@@ -91,7 +99,7 @@ public final class Diagram {
         if(sourcePort.inputPort() == targetPort.inputPort())
             return false;
 
-        if(canConnectFlowPorts(source, target) && canConnectDataPorts(source, target)) {
+        if(canConnectExecutionPath(source, target) && canConnectDataPorts(source, target)) {
             source.dataConnectionsProperty().put(sourcePort, new Pair<>(target, targetPort));
             target.dataConnectionsProperty().put(targetPort, new Pair<>(source, sourcePort));
             return true;
@@ -107,7 +115,7 @@ public final class Diagram {
     }
 
     /* Check if two flow ports can be connected together */
-    public boolean canConnectFlowPorts(DiagramNode sourceNode, DiagramNode targetNode) {
+    public boolean canConnectExecutionPath(DiagramNode sourceNode, DiagramNode targetNode) {
         /* Check to see if this connection would result in a cyclic dependency */
         Set<DiagramNode> visitedNodes = new HashSet<>();
         Queue<DiagramNode> nodesToVisit = new LinkedList<>();
@@ -124,7 +132,7 @@ public final class Diagram {
 
             /* Add connected flow nodes that haven't already been visited */
             PropertyHelper.whenPresentForEach(
-                    List.of(currentNode.inputFlowNodeProperty(), currentNode.outputFlowNodeProperty()),
+                    List.of(currentNode.executionPathNodeBeforeProperty(), currentNode.executionPathNodeAfterProperty()),
                     node -> {
                         if(!visitedNodes.contains(node))
                             nodesToVisit.add(node);

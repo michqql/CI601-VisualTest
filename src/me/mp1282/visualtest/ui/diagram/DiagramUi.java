@@ -10,6 +10,8 @@ import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.MenuItem;
 import javafx.scene.input.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -23,12 +25,11 @@ import me.mp1282.visualtest.ui.diagram.node.DiagramNodeInfoUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
 import me.mp1282.visualtest.ui.diagram.port.DataPortConnectorLineUi;
-import me.mp1282.visualtest.ui.executable.ExecutableUi;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
 import me.mp1282.visualtest.util.DragContext;
 import me.mp1282.visualtest.util.Pair;
 
-import java.util.List;
+import java.util.*;
 
 /*
  * The DiagramUi is responsible for managing DiagramNodeUis. This includes handling events for them.
@@ -36,6 +37,10 @@ import java.util.List;
 public class DiagramUi extends Pane {
 
     private final Diagram diagram;
+
+    /* Child UI element variables (nodes & connectors) */
+    private final Map<DiagramNode, DiagramNodeUi> nodeToUiMap;
+    private final Set<DataPortConnectorLineUi> dataPortConnectors;
 
     private final DoubleProperty translateX;
     private final DoubleProperty translateY;
@@ -61,6 +66,8 @@ public class DiagramUi extends Pane {
 
     public DiagramUi(Diagram diagram) {
         this.diagram = diagram;
+        this.nodeToUiMap = new HashMap<>();
+        this.dataPortConnectors = new HashSet<>();
         this.translateX = new SimpleDoubleProperty();
         this.translateY = new SimpleDoubleProperty();
         this.sourcePortPair = new SimpleObjectProperty<>();
@@ -208,9 +215,9 @@ public class DiagramUi extends Pane {
 
         /* Checks if a diagram node was clicked */
         if(e.getSource() instanceof DiagramNodeUi ui) {
-            /* Checks if a data port was clicked */
+            /* Checks if a data port was clicked and the Left Mouse Button was used */
             final DataPortArea hoveredPort = ui.hoveredDataPortProperty().get();
-            if(hoveredPort != null) {
+            if(hoveredPort != null && e.isPrimaryButtonDown()) {
                 /* If no current source data port is set, set this data port as the source.
                  * Otherwise, handle 'connecting' the two data ports together.
                  */
@@ -377,7 +384,9 @@ public class DiagramUi extends Pane {
     }
 
     private void createDiagramNodeUi(DiagramNode node) {
-        final ExecutableUi ui = new DiagramNodeUi(node);
+        final DiagramNodeUi ui = new DiagramNodeUi(node);
+        nodeToUiMap.put(node, ui);
+
         /* Add event listeners to the component.
          *
          * Can't use mouseClicked for this component because it doesn't
@@ -391,11 +400,29 @@ public class DiagramUi extends Pane {
          * class already binds these properties to the DiagramNode properties.
          */
 
+        /* Context Menu */
+        ContextMenu contextMenu = new ContextMenu();
+        ui.setContextMenu(contextMenu);
+
+        /* If the Executable that this node is wrapping has no outputs,
+         * add a MenuItem to specify the execution path.
+         */
+        if(node.getExecutable().getNumberOfOutputs() == 0) {
+            MenuItem executionPathItem = new MenuItem("Specify 'Execution Path'");
+            contextMenu.getItems().add(executionPathItem);
+        }
+
         getChildren().add(ui);
     }
 
     private void createDataPortConnectorUi(DiagramNodeUi sourceNodeUi, DataPortArea sourcePort,
                                            DiagramNodeUi targetNodeUi, DataPortArea targetPort) {
+        /* Check if there is already a UI element for this connection */
+        for (DataPortConnectorLineUi ui : dataPortConnectors) {
+            if(ui.equals(sourceNodeUi, sourcePort, targetNodeUi, targetPort))
+                return;
+        }
+
         final DataPortConnectorLineUi connector = new DataPortConnectorLineUi(
                 sourceNodeUi, sourcePort, targetNodeUi, targetPort);
         connector.setFocusTraversable(true); /* Allows this UI element to handle key events */
@@ -406,6 +433,38 @@ public class DiagramUi extends Pane {
         connector.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMousePressedForConnector);
 
         getChildren().add(connector);
+        dataPortConnectors.add(connector);
+    }
+
+    private void rebuildDataPortConnections() {
+        /* Firstly remove all current data port connector UI elements */
+        getChildren().removeIf(DataPortConnectorLineUi.class::isInstance);
+        dataPortConnectors.clear();
+
+        /* Loop over each DiagramNode in the Diagram */
+        for (DiagramNode node : diagram.nodesProperty()) {
+            final DiagramNodeUi sourceNodeUi = nodeToUiMap.get(node);
+            if(sourceNodeUi == null) /* TODO: If this is null we have a serious problem */
+                throw new RuntimeException("DiagramNode does not have a DiagramNodeUi when rebuilding data ports! (A)");
+
+            /* Loop over each data port connection for this node */
+            node.dataConnectionsProperty().forEach((port, pair) -> {
+                final DiagramNodeUi targetNodeUi = nodeToUiMap.get(pair.key());
+                if(targetNodeUi == null)
+                    throw new RuntimeException("DiagramNode does not have a DiagramNodeUi when rebuilding data ports! (B)");
+
+                final DataPortArea sourceArea = sourceNodeUi.getAreaFromDataPort(port);
+                if(sourceArea == null)
+                    throw new RuntimeException("DiagramNodeUi does not have a DataPortArea when rebuilding data ports! (A)");
+
+                final DataPortArea targetArea = targetNodeUi.getAreaFromDataPort(pair.value());
+                if(targetArea == null)
+                    throw new RuntimeException("DiagramNodeUi does not have a DataPortArea when rebuilding data ports! (B)");
+
+                /* Create the connection UI */
+                createDataPortConnectorUi(sourceNodeUi, sourceArea, targetNodeUi, targetArea);
+            });
+        }
     }
 
     private void deleteSelected() {
@@ -413,7 +472,22 @@ public class DiagramUi extends Pane {
         for (ISelectableUi ui : selected) {
             if(ui instanceof DiagramNodeUi nodeUi) {
                 DiagramNode node = nodeUi.getNode();
-                node.dataConnectionsProperty().keySet().forEach(port -> diagram.disconnectDataPort(node, port));
+
+                /* Remove the data port connections to this node
+                 * (node, port) -> (pair.key, pair.value)
+                 * (pair.key, pair.value) -> (node, port)
+                 *
+                 * Thus, performing pair.key remove pair.value effectively removes (node, port).
+                 *
+                 * Cannot use diagram.disconnectDataPorts here as that would cause a ConcurrentModificationException
+                 * if the number of connections is greater than 1.
+                 */
+                node.dataConnectionsProperty().forEach((port, pair) -> {
+                    pair.key().dataConnectionsProperty().remove(pair.value());
+                });
+
+                diagram.nodesProperty().remove(node);
+                nodeToUiMap.remove(node);
             } else if(ui instanceof DataPortConnectorLineUi lineUi) {
                 diagram.disconnectDataPort(lineUi.getSourceNodeUi().getNode(), lineUi.getSourcePort().getDataPort());
             }
@@ -422,5 +496,6 @@ public class DiagramUi extends Pane {
         }
 
         selected.clear();
+        rebuildDataPortConnections();
     }
 }

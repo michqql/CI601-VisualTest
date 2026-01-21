@@ -62,6 +62,15 @@ public class ExecutableUi extends Control {
         return cachedPortAreas;
     }
 
+    public DataPortArea getAreaFromDataPort(DataPort dataPort) {
+        for (DataPortArea area : cachedPortAreas) {
+            if(area.getDataPort().equals(dataPort))
+                return area;
+        }
+
+        return null;
+    }
+
     protected void cacheDataPortAreas() {
         cachedPortAreas.clear();
 

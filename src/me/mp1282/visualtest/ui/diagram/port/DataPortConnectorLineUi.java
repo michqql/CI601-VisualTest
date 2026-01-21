@@ -81,4 +81,17 @@ public class DataPortConnectorLineUi extends Line implements ISelectableUi {
     public BooleanProperty selectedProperty() {
         return selected;
     }
+
+    public boolean equals(DiagramNodeUi nodeA, DataPortArea areaA,
+                          DiagramNodeUi nodeB, DataPortArea areaB) {
+        boolean nodesEqual =
+                (sourceNodeUi.equals(nodeA) && targetNodeUi.equals(nodeB)) ||
+                (sourceNodeUi.equals(nodeB) && targetNodeUi.equals(nodeA));
+
+        boolean portsEqual =
+                (sourcePort.equals(areaA) && targetPort.equals(areaB)) ||
+                (sourcePort.equals(areaB) && targetPort.equals(areaA));
+
+        return nodesEqual && portsEqual;
+    }
 }

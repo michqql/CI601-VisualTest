@@ -17,7 +17,7 @@ public class KeyboardHelper {
         this.actionableKeyEvents = new ArrayList<>();
 
         diagramUi.sceneProperty().addListener((_, old, scene) -> {
-            if(old != null)   old.setOnKeyPressed(null);
+            if(old   != null) old  .setOnKeyPressed(null);
             if(scene != null) scene.setOnKeyPressed(this::handleKeyPress);
         });
     }

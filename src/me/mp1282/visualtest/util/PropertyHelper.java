@@ -30,4 +30,9 @@ public class PropertyHelper {
         for(ObservableValue<T> obs : obsList)
             whenPresent(obs, action);
     }
+
+    public static <T> void addListenerForEach(List<ObservableValue<T>> obsList, Consumer<T> action) {
+        for (ObservableValue<T> obs : obsList)
+            obs.addListener((_, _, newValue) -> action.accept(newValue));
+    }
 }

@@ -16,21 +16,25 @@ public class DiagramNode {
     private static final int COST_OF_NO_INPUTS          = 0;
     private static final int COST_PER_UNCONNECTED_INPUT = 1;
     private static final int COST_PER_CONNECTED_INPUT   = 2;
+    private static final int COST_OF_EXECUTION_PATH     = 5;
 
     private final UUID uuid;
 
     /* The wrapped executable */
     private Executable executable;
 
-    /* The other nodes this node is connected to */
-    private final ObservableMap<DataPort, Pair<DiagramNode, DataPort>> sourceToTargetConnectionMap;
+    /* The other nodes this node is connected to
+     * In the format of:
+     * (Source Data Port) => (Target Node, Target Data Port)
+     */
+    private final ObservableMap<DataPort, Pair<DiagramNode, DataPort>> dataPortConnectionMap;
+    /* Execution Path variables */
+    private final ObjectProperty<DiagramNode> executionPathNodeBefore;
+    private final ObjectProperty<DiagramNode> executionPathNodeAfter;
     /* The cached execution cost, only recalculated when
      * the executable or its connections changes
      */
     private final IntegerProperty cachedExecutionCost;
-    /* Flow connections */
-    private final ObjectProperty<DiagramNode> executionPathNodeBefore;
-    private final ObjectProperty<DiagramNode> executionPathNodeAfter;
 
     /* Executable data - static data that is entered by the user as a property */
     private String comment;
@@ -44,17 +48,18 @@ public class DiagramNode {
     public DiagramNode(Executable executable) {
         this.uuid                        = UUID.randomUUID();
         this.executable                  = executable;
-        this.sourceToTargetConnectionMap = FXCollections.observableHashMap();
-        this.cachedExecutionCost         = new SimpleIntegerProperty();
+        this.dataPortConnectionMap       = FXCollections.observableHashMap();
         this.executionPathNodeBefore     = new SimpleObjectProperty<>();
         this.executionPathNodeAfter      = new SimpleObjectProperty<>();
+        this.cachedExecutionCost         = new SimpleIntegerProperty();
         this.x                           = new SimpleDoubleProperty();
         this.y                           = new SimpleDoubleProperty();
         this.width                       = new SimpleDoubleProperty();
         this.height                      = new SimpleDoubleProperty();
 
         /* Recalculate execution cost when connections change */
-        this.sourceToTargetConnectionMap.addListener(this::handleMapChange);
+        dataPortConnectionMap.addListener(this::handleDataPortConnectionMapChange);
+        executionPathNodeBefore.addListener(this::handleExecutionPathNodeBeforeChange);
         calculateExecutionCost(); /* Calculate initial value */
     }
 
@@ -66,12 +71,12 @@ public class DiagramNode {
         /* The executable has changed, clear the connection map.
          * This will also trigger recalculation of execution cost.
          */
-        this.sourceToTargetConnectionMap.clear();
+        this.dataPortConnectionMap.clear();
         this.executable = executable;
     }
 
     public ObservableMap<DataPort, Pair<DiagramNode, DataPort>> dataConnectionsProperty() {
-        return sourceToTargetConnectionMap;
+        return dataPortConnectionMap;
     }
 
     public IntegerProperty executionCostProperty() {
@@ -116,12 +121,12 @@ public class DiagramNode {
      * - With inputs (connected), cost is sum of input costs + 1.
      */
     private void calculateExecutionCost() {
-        if(executable.getNumberOfInputs() == 0) {
-            cachedExecutionCost.set(COST_OF_NO_INPUTS);
-        } else {
-            int cost = 0;
+        int cost = COST_OF_NO_INPUTS;
+
+        /* Calculate cost for data port inputs */
+        if(executable.getNumberOfInputs() > 0) {
             for(DataPort input : executable.getInputs()) {
-                Pair<DiagramNode, DataPort> connection = sourceToTargetConnectionMap.get(input);
+                Pair<DiagramNode, DataPort> connection = dataPortConnectionMap.get(input);
                 if(connection == null) {
                     /* Not connected, add base cost */
                     cost += COST_PER_UNCONNECTED_INPUT;
@@ -131,31 +136,50 @@ public class DiagramNode {
                     cost += connection.key().executionCostProperty().get() + COST_PER_CONNECTED_INPUT;
                 }
             }
-
-            cachedExecutionCost.set(cost);
         }
+
+        /* Calculate cost for execution path */
+        if(executionPathNodeBefore.get() != null)
+            cost += executionPathNodeBefore.get().executionCostProperty().get() + COST_OF_EXECUTION_PATH;
+
+        /* Set final cost */
+        cachedExecutionCost.set(cost);
     }
 
-    private void handleMapChange(MapChangeListener.Change<
+    private void handleDataPortConnectionMapChange(MapChangeListener.Change<
             ? extends DataPort, ? extends Pair<DiagramNode, DataPort>> change) {
         /* Add listener to any new DiagramNode added to the map */
         if(change.wasAdded()) {
             change.getValueAdded().key().executionCostProperty()
-                    .addListener(this::handleMapInternalChange);
+                    .addListener(this::handleExecutionCostChangeOfOtherNode);
         }
 
         /* Remove listener from any DiagramNode removed from the map */
         if(change.wasRemoved()) {
             change.getValueRemoved().key().executionCostProperty()
-                    .removeListener(this::handleMapInternalChange);
+                    .removeListener(this::handleExecutionCostChangeOfOtherNode);
         }
 
         /* Recalculate execution cost when connections change */
         calculateExecutionCost();
     }
 
-    private void handleMapInternalChange(ObservableValue<? extends Number> obs,
-                                         Number oldVal, Number newVal) {
+    private void handleExecutionPathNodeBeforeChange(ObservableValue<? extends DiagramNode> obs,
+                                                     DiagramNode oldVal, DiagramNode newVal) {
+        /* Add listener to a new DiagramNode */
+        if(newVal != null)
+            newVal.executionCostProperty().addListener(this::handleExecutionCostChangeOfOtherNode);
+
+        /* Remove listener from the old DiagramNode */
+        if(oldVal != null)
+            oldVal.executionCostProperty().removeListener(this::handleExecutionCostChangeOfOtherNode);
+
+        /* Recalculate execution cost when the execution path changes */
+        calculateExecutionCost();
+    }
+
+    private void handleExecutionCostChangeOfOtherNode(ObservableValue<? extends Number> obs,
+                                                      Number oldVal, Number newVal) {
         calculateExecutionCost();
     }
 

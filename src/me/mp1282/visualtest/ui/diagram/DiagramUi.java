@@ -120,7 +120,12 @@ public class DiagramUi extends Pane {
         final KeyboardHelper keyboardHelper = new KeyboardHelper(this);
         keyboardHelper.addKeyHandler(keyEvent -> keyEvent.getCode() == KeyCode.DELETE, this::deleteSelected);
 
-        getChildren().addAll(gridCanvas, connectionHelper.getTempConnectionLine(), infoUi);
+        getChildren().addAll(
+                gridCanvas,
+                connectionHelper.getTempConnectionLine(),
+                connectionHelper.getTempExecutionPathLine(),
+                infoUi
+        );
     }
 
     public Diagram getDiagram() {

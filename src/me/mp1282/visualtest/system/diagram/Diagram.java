@@ -89,6 +89,10 @@ public final class Diagram {
 
         if(before != null) before.executionPathNodeAfterProperty().set(null);
         if(after  != null) after .executionPathNodeBeforeProperty().set(null);
+
+        /* Set the before and after for the node passed to this function to null */
+        node.executionPathNodeBeforeProperty().set(null);
+        node.executionPathNodeAfterProperty().set(null);
     }
 
     /* Create a connection between two data ports */

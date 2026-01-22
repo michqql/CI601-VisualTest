@@ -428,7 +428,7 @@ public class DiagramUi extends Pane {
         connector.setTranslateY(translateY.get());
 
         /* Add event handlers */
-        connector.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMousePressedForConnector);
+        connector.setMouseClickConsumer(this::handleMousePressedForConnector);
 
         getChildren().add(connector);
         sortChildrenByZOrder();

@@ -35,7 +35,7 @@ public class ConnectionHelper {
         tempConnectionLine   .setVisible(false);
         tempConnectionLine   .setStroke(DATA_PORT_LINE_COLOUR);
         tempExecutionPathLine.setVisible(false);
-        tempExecutionPathLine.colourProperty().set(EXECUTION_PATH_LINE_COLOUR);
+        tempExecutionPathLine.setColour(EXECUTION_PATH_LINE_COLOUR);
 
         dataPortSource         .addListener((_, _, _) -> redrawConnectingLine());
         executionPathSourceNode.addListener((_, _, _) -> redrawConnectingLine());
@@ -155,12 +155,10 @@ public class ConnectionHelper {
             final DiagramNode node = executionPathNodeUi.getNode();
 
             /* Draw line between source node and mouse cursor */
-            tempExecutionPathLine.startXProperty().set(
-                    node.xProperty().get() + (node.widthProperty().get() / 2));
-            tempExecutionPathLine.startYProperty().set(
-                    node.yProperty().get() + (node.heightProperty().get() / 2));
-            tempExecutionPathLine.endXProperty().set(diagramUi.lastMouseX.get());
-            tempExecutionPathLine.endYProperty().set(diagramUi.lastMouseY.get());
+            tempExecutionPathLine.setStartX(node.xProperty().get() + (node.widthProperty().get() / 2));
+            tempExecutionPathLine.setStartY(node.yProperty().get() + (node.heightProperty().get() / 2));
+            tempExecutionPathLine.setEndX  (diagramUi.lastMouseX.get());
+            tempExecutionPathLine.setEndY  (diagramUi.lastMouseY.get());
         }
 
         /* Redraw line first before setting visibility to remove visual flicker */

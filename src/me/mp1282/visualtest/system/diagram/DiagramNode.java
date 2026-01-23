@@ -7,18 +7,17 @@ import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableMap;
 import me.mp1282.visualtest.system.executable.DataPort;
 import me.mp1282.visualtest.system.executable.Executable;
+import me.mp1282.visualtest.util.Identifiable;
 import me.mp1282.visualtest.util.Pair;
 
 import java.util.UUID;
 
-public class DiagramNode {
+public class DiagramNode extends Identifiable {
 
     private static final int COST_OF_NO_INPUTS          = 0;
     private static final int COST_PER_UNCONNECTED_INPUT = 1;
     private static final int COST_PER_CONNECTED_INPUT   = 2;
     private static final int COST_OF_EXECUTION_PATH     = 5;
-
-    private final UUID uuid;
 
     /* The wrapped executable */
     private Executable executable;
@@ -46,7 +45,7 @@ public class DiagramNode {
     private final DoubleProperty height;
 
     public DiagramNode(Executable executable) {
-        this.uuid                        = UUID.randomUUID();
+        super();
         this.executable                  = executable;
         this.dataPortConnectionMap       = FXCollections.observableHashMap();
         this.executionPathNodeBefore     = new SimpleObjectProperty<>();

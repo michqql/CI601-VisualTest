@@ -52,7 +52,7 @@ public class ToastUi {
 
         SequentialTransition mainTransition = new SequentialTransition(
                 inTransition, pauseTransition, outTransition);
-        mainTransition.setOnFinished(e -> toastStage.close());
+        mainTransition.setOnFinished(_ -> toastStage.close());
         mainTransition.play();
     }
 }

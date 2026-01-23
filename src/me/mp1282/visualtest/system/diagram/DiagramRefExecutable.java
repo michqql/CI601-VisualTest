@@ -4,7 +4,6 @@ import me.mp1282.visualtest.system.executable.DataPort;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.util.Pair;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class DiagramRefExecutable extends Executable {

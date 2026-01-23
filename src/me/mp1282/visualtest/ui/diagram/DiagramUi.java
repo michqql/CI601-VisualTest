@@ -525,6 +525,9 @@ public class DiagramUi extends Pane {
 
             }
 
+            /* IDE marks this as a suspicious call because technically an ISelectableUi isn't any JavaFX node.
+             * However, in the implementation the UI object is always a node.
+             */
             getChildren().remove(ui);
         }
 

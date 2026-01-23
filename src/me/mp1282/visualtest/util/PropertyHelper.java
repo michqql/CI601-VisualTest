@@ -1,5 +1,6 @@
 package me.mp1282.visualtest.util;
 
+import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 
 import java.util.List;
@@ -34,5 +35,13 @@ public class PropertyHelper {
     public static <T> void addListenerForEach(List<ObservableValue<T>> obsList, Consumer<T> action) {
         for (ObservableValue<T> obs : obsList)
             obs.addListener((_, _, newValue) -> action.accept(newValue));
+    }
+
+    public static <T> void addListenerAndInvokeOnUI(ObservableValue<T> obs, Consumer<T> action) {
+        obs.addListener((_, _, newValue) -> {
+            Platform.runLater(() -> {
+                action.accept(newValue);
+            });
+        });
     }
 }

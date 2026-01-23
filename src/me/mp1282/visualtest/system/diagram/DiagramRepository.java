@@ -22,7 +22,7 @@ public class DiagramRepository {
     }
 
     public DiagramRefExecutable getReferenceExecutable(Diagram diagram) {
-        return diagramToReferenceExecutableMap.computeIfAbsent(diagram, diagram1 -> {
+        return diagramToReferenceExecutableMap.computeIfAbsent(diagram, _ -> {
             DiagramRefExecutable exe = new DiagramRefExecutable(diagram);
             exe.init();
             return exe;

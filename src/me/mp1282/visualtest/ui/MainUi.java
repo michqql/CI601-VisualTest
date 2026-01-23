@@ -3,13 +3,18 @@ package me.mp1282.visualtest.ui;
 import javafx.event.ActionEvent;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import me.mp1282.visualtest.system.VisualTestSystem;
 import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.DiagramRepository;
@@ -17,6 +22,7 @@ import me.mp1282.visualtest.system.diagram.runtime.ExecuteTask;
 import me.mp1282.visualtest.system.diagram.runtime.RuntimeEnvironment;
 import me.mp1282.visualtest.system.jarload.LoadedJar;
 import me.mp1282.visualtest.system.jarload.LoadedJarRepository;
+import me.mp1282.visualtest.ui.diagram.runtime.RuntimeUi;
 import me.mp1282.visualtest.ui.diagram.tab.DiagramTabPaneUi;
 import me.mp1282.visualtest.ui.diagram.tab.DiagramTabUi;
 import me.mp1282.visualtest.ui.other.ToastUi;
@@ -30,15 +36,19 @@ public class MainUi extends VBox {
 
     private final LoadedJarRepository jarRepository;
     private final DiagramRepository diagramRepository;
-    private final RuntimeEnvironment runtimeEnvironment;
 
     /* UI elements */
     private final DiagramTabPaneUi diagramTabPane;
+    private final Stage runtimeStage;
+
 
     public MainUi() {
         this.jarRepository = VisualTestSystem.getInstance().getJarRepository();
         this.diagramRepository = VisualTestSystem.getInstance().getDiagramRepository();
-        this.runtimeEnvironment = VisualTestSystem.getInstance().getRuntimeEnvironment();
+
+        this.runtimeStage = new Stage();
+        runtimeStage.setTitle("Runtime / Debugger");
+        runtimeStage.setScene(new Scene(new RuntimeUi()));
 
         setAlignment(Pos.TOP_CENTER);
 
@@ -129,8 +139,6 @@ public class MainUi extends VBox {
     }
 
     private void onClickRunDiagram(ActionEvent actionEvent) {
-        if(diagramTabPane.getSelectionModel().getSelectedItem() instanceof DiagramTabUi tab) {
-            runtimeEnvironment.queueTask(new ExecuteTask(tab.getDiagram()));
-        }
+        runtimeStage.show();
     }
 }

@@ -23,7 +23,11 @@ public abstract class MethodExecutable extends Executable {
     @Override
     public void execute(Object[] inputs, Object[] outputs) throws Exception {
         Object returnedValue = this.method.invoke(null, inputs);
-        outputs[0] = returnedValue;
+        /* A MethodExecutable can only ever have 0 or 1 outputs, so write to the array
+         * if this method returns an output. Otherwise, do nothing.
+         */
+        if(getNumberOfOutputs() > 0)
+            outputs[0] = returnedValue;
     }
 
     @Override

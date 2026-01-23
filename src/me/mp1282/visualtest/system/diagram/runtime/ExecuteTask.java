@@ -30,13 +30,19 @@ public class ExecuteTask {
         executionOrder.sort(NODE_COMPARATOR);
     }
 
+    public List<DiagramNode> getExecutionOrder() {
+        return executionOrder;
+    }
+
     public boolean canStep() {
         return !executionOrder.isEmpty();
     }
 
-    public void step(System.Logger log) throws Exception {
+    public RunStep step(System.Logger log) throws Exception {
         final DiagramNode currentNode = executionOrder.removeFirst();
         final Executable exe = currentNode.getExecutable();
+
+        final RunStep result = new RunStep(diagram, currentNode);
 
         /* Prepare inputs for current node */
         Object[] inputs = new Object[exe.getNumberOfInputs()];
@@ -44,6 +50,8 @@ public class ExecuteTask {
             Object input = inputPortToDataMap.remove(new Pair<>(currentNode, inputPort));
             inputs[inputPort.portIndex()] = input;
         }
+
+        result.setInputs(inputs);
 
         /* Prepare outputs for current node */
         Object[] outputs = new Object[exe.getNumberOfOutputs()];
@@ -61,5 +69,9 @@ public class ExecuteTask {
 
             inputPortToDataMap.put(nextInput, output);
         }
+
+        result.setOutputs(outputs);
+
+        return result;
     }
 }

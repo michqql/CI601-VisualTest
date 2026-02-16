@@ -8,23 +8,17 @@ import javafx.scene.control.Button;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
+import javafx.stage.Window;
 import me.mp1282.visualtest.system.VisualTestSystem;
 import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.DiagramRepository;
-import me.mp1282.visualtest.system.diagram.runtime.ExecuteTask;
-import me.mp1282.visualtest.system.diagram.runtime.RuntimeEnvironment;
 import me.mp1282.visualtest.system.jarload.LoadedJar;
 import me.mp1282.visualtest.system.jarload.LoadedJarRepository;
 import me.mp1282.visualtest.ui.diagram.runtime.RuntimeUi;
 import me.mp1282.visualtest.ui.diagram.tab.DiagramTabPaneUi;
-import me.mp1282.visualtest.ui.diagram.tab.DiagramTabUi;
 import me.mp1282.visualtest.ui.other.ToastUi;
 import me.mp1282.visualtest.ui.sidebar.ClassHierarchyUi;
 import me.mp1282.visualtest.ui.sidebar.ExecutableListUi;
@@ -42,15 +36,19 @@ public class MainUi extends VBox {
     private final Stage runtimeStage;
 
 
-    public MainUi() {
+    public MainUi(Window window) {
         this.jarRepository = VisualTestSystem.getInstance().getJarRepository();
         this.diagramRepository = VisualTestSystem.getInstance().getDiagramRepository();
 
         this.runtimeStage = new Stage();
+        runtimeStage.initOwner(window);
         runtimeStage.setTitle("Runtime / Debugger");
         runtimeStage.setScene(new Scene(new RuntimeUi()));
 
         setAlignment(Pos.TOP_CENTER);
+
+        /* MenuBar UI with key elements */
+        MainMenuBarUi menuBarUi = new MainMenuBarUi();
 
         /* ToolBar UI with key buttons */
         Button loadJar = new Button("Load JAR");
@@ -86,7 +84,7 @@ public class MainUi extends VBox {
         VBox.setVgrow(mainContentSplitPane, Priority.ALWAYS);
         VBox.setVgrow(sidebarSplitPane, Priority.ALWAYS);
 
-        getChildren().addAll(toolBar, mainContentSplitPane);
+        getChildren().addAll(menuBarUi, mainContentSplitPane);
     }
 
     private void onClickLoadJar(ActionEvent e) {

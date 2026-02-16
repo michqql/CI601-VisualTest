@@ -1,28 +1,30 @@
 package me.mp1282.visualtest.ui.diagram.runtime;
 
 import javafx.geometry.Insets;
-import javafx.geometry.Orientation;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import me.mp1282.visualtest.system.VisualTestSystem;
 import me.mp1282.visualtest.system.diagram.Diagram;
-import me.mp1282.visualtest.system.diagram.DiagramNode;
 import me.mp1282.visualtest.system.diagram.DiagramRepository;
 import me.mp1282.visualtest.system.diagram.runtime.ExecuteTask;
-import me.mp1282.visualtest.system.diagram.runtime.RuntimeEnvironment;
+import me.mp1282.visualtest.system.diagram.runtime.RunStep;
+import me.mp1282.visualtest.system.diagram.runtime.RuntimeEnvironmentService;
+import me.mp1282.visualtest.ui.other.DiagramListCell;
+import me.mp1282.visualtest.util.PropertyHelper;
 
 public class RuntimeUi extends VBox {
 
     private final DiagramRepository diagramRepository;
-    private final RuntimeEnvironment runtime;
+    private final RuntimeEnvironmentService runtime;
 
     private final ComboBox<Diagram> diagramSelectComboBox;
     private final CheckBox stepModeCheckBox;
     private final Button stepButton;
     private final Button runDiagramButton;
 
-    private final ListView<DiagramNode> nodeList;
+    private final ListView<RunStep> runStepList;
+    private final RunStepInfoUi runStepInfo;
 
     public RuntimeUi() {
         this.diagramRepository = VisualTestSystem.getInstance().getDiagramRepository();
@@ -33,11 +35,12 @@ public class RuntimeUi extends VBox {
         this.stepButton = new Button("Step");
         this.runDiagramButton = new Button("Run Diagram");
 
-        this.nodeList = new ListView<>();
+        this.runStepList = new ListView<>();
+        this.runStepInfo = new RunStepInfoUi();
 
         diagramSelectComboBox.valueProperty().addListener((_, _, diagram) -> handleDiagramSelect(diagram));
-        diagramSelectComboBox.setCellFactory(_ -> new DiagramSelectComboBoxCell());
-        diagramSelectComboBox.setButtonCell(new DiagramSelectComboBoxCell());
+        diagramSelectComboBox.setCellFactory(_ -> new DiagramListCell());
+        diagramSelectComboBox.setButtonCell(new DiagramListCell());
         diagramSelectComboBox.setMaxWidth(150);
 
         runtime.stepModeProperty().bind(stepModeCheckBox.selectedProperty());
@@ -47,15 +50,18 @@ public class RuntimeUi extends VBox {
         stepButton.setOnMouseClicked(e -> runtime.setStepFlag());
 
         /* Only enable run diagram button if a diagram is selected and nothing is currently running */
+        runDiagramButton.setOnMouseClicked(e -> handleRunDiagram(diagramSelectComboBox.getValue()));
         runDiagramButton.disableProperty().bind(
                 diagramSelectComboBox.valueProperty().isNotNull().and(runtime.runningTaskProperty().not()).not());
-        runDiagramButton.setOnMouseClicked(e -> handleRunDiagram(diagramSelectComboBox.getValue()));
 
-        nodeList.setCellFactory(_ -> new DiagramNodeListCell());
+        runStepList.setCellFactory(_ -> new RunStepCell());
+        runStepList.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+        runStepList.getSelectionModel().selectedItemProperty().addListener((_, _, runStep) -> handleRunStepSelect(runStep));
+        PropertyHelper.bindList(runtime.getRunStepList(), runStepList.getItems());
 
         HBox group1 = new HBox(10, diagramSelectComboBox, stepModeCheckBox, stepButton, runDiagramButton);
         group1.setPadding(new Insets(10));
-        VBox group2 = new VBox(10, nodeList);
+        SplitPane group2 = new SplitPane(runStepList, runStepInfo);
         getChildren().addAll(group1, group2);
     }
 
@@ -63,33 +69,24 @@ public class RuntimeUi extends VBox {
 
     }
 
+    private void handleRunStepSelect(RunStep step) {
+        runStepInfo.setRunStep(step);
+    }
+
     private void handleRunDiagram(Diagram diagram) {
         ExecuteTask task = new ExecuteTask(diagram);
         runtime.queueTask(task);
     }
 
-    private static class DiagramSelectComboBoxCell extends ListCell<Diagram> {
+    private static class RunStepCell extends ListCell<RunStep> {
         @Override
-        protected void updateItem(Diagram diagram, boolean empty) {
-            super.updateItem(diagram, empty);
+        protected void updateItem(RunStep step, boolean empty) {
+            super.updateItem(step, empty);
 
-            if(diagram == null || empty) {
+            if(step == null || empty) {
                 setText(null);
             } else {
-                setText(diagram.nameProperty().get());
-            }
-        }
-    }
-
-    private static class DiagramNodeListCell extends ListCell<DiagramNode> {
-        @Override
-        protected void updateItem(DiagramNode node, boolean empty) {
-            super.updateItem(node, empty);
-
-            if(node == null || empty) {
-                setText(null);
-            } else {
-                setText((getIndex() + 1) + ". " + node.getExecutable().getName());
+                setText((getIndex() + 1) + ". " + step.getNode().getExecutable().getName());
             }
 
         }

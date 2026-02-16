@@ -8,6 +8,7 @@ import javafx.collections.ObservableList;
 import javafx.util.Callback;
 import me.mp1282.visualtest.system.executable.DataPort;
 import me.mp1282.visualtest.system.executable.Executable;
+import me.mp1282.visualtest.util.DiagramZoomLevel;
 import me.mp1282.visualtest.util.Pair;
 import me.mp1282.visualtest.util.PropertyHelper;
 
@@ -30,6 +31,7 @@ public final class Diagram {
     /* Position data */
     private final DoubleProperty translateX;
     private final DoubleProperty translateY;
+    private final ObjectProperty<DiagramZoomLevel> zoomLevel;
 
     public Diagram() {
         this.unsaved = new SimpleBooleanProperty();
@@ -37,6 +39,7 @@ public final class Diagram {
         this.name = new SimpleStringProperty( "Diagram-" + UUID.randomUUID());
         this.translateX = new SimpleDoubleProperty();
         this.translateY = new SimpleDoubleProperty();
+        this.zoomLevel  = new SimpleObjectProperty<>(DiagramZoomLevel.DEFAULT);
 
         /* When a property value changes, mark the diagram as unsaved */
         nodes     .addListener((InvalidationListener) _ -> unsaved.set(true));
@@ -63,6 +66,10 @@ public final class Diagram {
 
     public DoubleProperty translateYProperty() {
         return translateY;
+    }
+
+    public ObjectProperty<DiagramZoomLevel> zoomLevelProperty() {
+        return zoomLevel;
     }
 
     /* Place an executable onto the diagram */

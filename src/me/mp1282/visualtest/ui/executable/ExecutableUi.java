@@ -25,8 +25,8 @@ public class ExecutableUi extends Control {
         this.requestRedrawProperty = new SimpleBooleanProperty(false);
 
         /* Set a default dimension of 150x150 */
-        setWidth(150);
-        setHeight(150);
+        setWidth(75);
+        setHeight(75);
 
         /* Re-cache the data port areas when resizing
          * (which will change when the width and height of this UI component changes)

@@ -21,13 +21,30 @@ public class RunStep {
         this.outputSnapshots = new ArrayList<>();
     }
 
-    public void setInputs(Object[] inputs) {
+    public Diagram getDiagram() {
+        return diagram;
+    }
+
+    public DiagramNode getNode() {
+        return node;
+    }
+
+    public List<ObjectSnapshot> getInputSnapshots() {
+        return inputSnapshots;
+    }
+
+    public List<ObjectSnapshot> getOutputSnapshots() {
+        return outputSnapshots;
+    }
+
+    /* Package-private methods */
+    void setInputs(Object[] inputs) {
         for (Object input : inputs) {
             inputSnapshots.add(new ObjectSnapshot(input));
         }
     }
 
-    public void setOutputs(Object[] outputs) {
+    void setOutputs(Object[] outputs) {
         for (Object output : outputs) {
             outputSnapshots.add(new ObjectSnapshot(output));
         }

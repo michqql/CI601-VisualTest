@@ -16,7 +16,7 @@ public class Application extends javafx.application.Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        Scene scene = new Scene(new MainUi(), 1280, 720);
+        Scene scene = new Scene(new MainUi(stage), 1280, 720);
 
         stage.setTitle("Visual Testing");
         stage.setMaximized(false);

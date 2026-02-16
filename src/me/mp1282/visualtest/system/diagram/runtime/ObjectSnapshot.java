@@ -14,6 +14,8 @@ public class ObjectSnapshot {
     private final Class<?> type;
     private final byte[] bytes;
 
+    private Object cachedObject;
+
     public ObjectSnapshot(Object object) {
         this.type = object.getClass();
         KRYO_LIB.register(type);
@@ -31,7 +33,10 @@ public class ObjectSnapshot {
     }
 
     public Object getObject() {
-        Input input = new Input(new ByteArrayInputStream(bytes));
-        return KRYO_LIB.readObject(input, type);
+        if(cachedObject == null) {
+            Input input = new Input(new ByteArrayInputStream(bytes));
+            cachedObject = KRYO_LIB.readObject(input, type);
+        }
+        return cachedObject;
     }
 }

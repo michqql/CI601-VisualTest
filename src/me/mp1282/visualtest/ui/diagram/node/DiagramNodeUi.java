@@ -47,8 +47,8 @@ public class DiagramNodeUi extends ExecutableUi implements ISelectableUi, IDiagr
         node.executionCostProperty().addListener((_, _, _) -> requestRedraw());
 
         /* Set a default dimension of 150x150 */
-        setWidth(150);
-        setHeight(150);
+        setWidth(110);
+        setHeight(110);
     }
 
     @Override
@@ -72,5 +72,13 @@ public class DiagramNodeUi extends ExecutableUi implements ISelectableUi, IDiagr
     @Override
     public int getZOrder() {
         return 0;
+    }
+
+    public void setWidth(double width) {
+        super.setWidth(width);
+    }
+
+    public void setHeight(double height) {
+        super.setHeight(height);
     }
 }

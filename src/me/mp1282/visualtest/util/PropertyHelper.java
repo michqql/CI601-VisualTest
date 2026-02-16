@@ -2,6 +2,8 @@ package me.mp1282.visualtest.util;
 
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -37,10 +39,22 @@ public class PropertyHelper {
             obs.addListener((_, _, newValue) -> action.accept(newValue));
     }
 
-    public static <T> void addListenerAndInvokeOnUI(ObservableValue<T> obs, Consumer<T> action) {
+    public static <T> void addListenerThreadSafe(ObservableValue<T> obs, Consumer<T> action) {
         obs.addListener((_, _, newValue) -> {
             Platform.runLater(() -> {
                 action.accept(newValue);
+            });
+        });
+    }
+
+    public static <T> void bindList(ObservableList<T> source, ObservableList<T> target) {
+        source.addListener((ListChangeListener<? super T>) change -> target.setAll(change.getList()));
+    }
+
+    public static <T> void bindListThreadSafe(ObservableList<T> source, ObservableList<T> target) {
+        source.addListener((ListChangeListener<? super T>) change -> {
+            Platform.runLater(() -> {
+                target.setAll(change.getList());
             });
         });
     }

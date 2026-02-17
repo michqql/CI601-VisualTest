@@ -6,6 +6,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import me.mp1282.visualtest.system.IReset;
 import me.mp1282.visualtest.system.diagram.DiagramNode;
 import me.mp1282.visualtest.util.PropertyHelper;
 
@@ -17,7 +18,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class RuntimeEnvironmentService extends Thread {
+public class RuntimeEnvironmentService extends Thread implements IReset {
 
     protected static final System.Logger RUNTIME_INFO_LOGGER = System.getLogger("DIAGRAM-RTI");
 
@@ -140,5 +141,18 @@ public class RuntimeEnvironmentService extends Thread {
             queue.addAll(task.getExecutionOrder());
         }
         return queue;
+    }
+
+    @Override
+    public void reset() {
+        try {
+            lock.lock();
+
+            tasks.clear();
+            currentTask.set(null);
+
+        } finally {
+            lock.unlock();
+        }
     }
 }

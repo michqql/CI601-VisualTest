@@ -36,6 +36,7 @@ public class DiagramTabUi extends Tab {
 
     public DiagramTabUi(Diagram diagram, DiagramUi ui) {
         super(diagram.nameProperty().get(), ui);
+        setUserData(diagram);
 
         this.diagramRepository = VisualTestSystem.getInstance().getDiagramRepository();
         this.diagram = diagram;
@@ -47,8 +48,8 @@ public class DiagramTabUi extends Tab {
         createContextMenu();
 
         /* Event handlers */
-        diagram.unsavedProperty().addListener((obs, old, newValue) -> handleUnsavedChange(newValue));
-        selectedProperty().addListener((obs, old, newValue) -> handleSelected(newValue));
+        diagram.unsavedProperty().addListener((_, _, newValue) -> handleUnsavedChange(newValue));
+        selectedProperty().addListener((_, _, newValue) -> handleSelected(newValue));
     }
 
     public Diagram getDiagram() {

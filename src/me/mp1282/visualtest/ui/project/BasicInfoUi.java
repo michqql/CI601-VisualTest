@@ -3,10 +3,7 @@ package me.mp1282.visualtest.ui.project;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.StringExpression;
 import javafx.geometry.Insets;
-import javafx.scene.Node;
-import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
 import javafx.scene.text.Text;
 import me.mp1282.visualtest.system.ProjectInformation;
 import me.mp1282.visualtest.system.VisualTestSystem;
@@ -14,17 +11,17 @@ import me.mp1282.visualtest.system.diagram.DiagramRepository;
 import me.mp1282.visualtest.system.jarload.LoadedClass;
 import me.mp1282.visualtest.system.jarload.LoadedJar;
 import me.mp1282.visualtest.system.jarload.LoadedJarRepository;
+import me.mp1282.visualtest.ui.other.GridPane2dInfoUi;
 
-import java.util.function.Supplier;
+import java.io.File;
 
-public class BasicInfoUi extends GridPane {
+public class BasicInfoUi extends GridPane2dInfoUi {
 
     private int rowCounter;
 
     public BasicInfoUi() {
+        super(5, 10);
         setPadding(new Insets(20));
-        setHgap(10);
-        setVgap(5);
         
         final ProjectInformation info             = VisualTestSystem.getInstance().getProjectInformation();
         final DiagramRepository diagramRepository = VisualTestSystem.getInstance().getDiagramRepository();
@@ -35,6 +32,15 @@ public class BasicInfoUi extends GridPane {
             nameTextField.setPromptText("Name");
             nameTextField.textProperty().bindBidirectional(info.nameProperty());
             return nameTextField;
+        });
+
+        addInfoEntry("Project Directory", () -> {
+            final Text filePathText = new Text();
+            filePathText.textProperty().bind(Bindings.createStringBinding(() -> {
+                    File file = info.projectDirectoryProperty().get();
+                    return file == null ? "Project directory not set" : file.getAbsolutePath();
+                }, info.projectDirectoryProperty()));
+            return filePathText;
         });
 
         addInfoEntry("System Version", () -> {
@@ -48,7 +54,7 @@ public class BasicInfoUi extends GridPane {
 
         addInfoEntry("No. Diagrams", () -> {
             final Text numDiagramsText = new Text();
-            numDiagramsText.textProperty().bind(diagramRepository.numberOfDiagramsProperty().asString());
+            numDiagramsText.textProperty().bind(Bindings.size(diagramRepository.getDiagrams()).asString());
             return numDiagramsText;
         });
 
@@ -70,18 +76,5 @@ public class BasicInfoUi extends GridPane {
                     "%d / %d / %d", jarCount, classCount, methodCount
             ));
         });
-    }
-
-    private void addInfoEntry(String name, Supplier<Node> nodeSupplier) {
-        final Node node = nodeSupplier.get();
-        final Label label = new Label(name);
-        label.setLabelFor(node);
-
-        GridPane.setConstraints(label, /* Column => */ 0, /* Row => */ rowCounter);
-        GridPane.setConstraints(node,  /* Column => */ 1, /* Row => */ rowCounter);
-
-        getChildren().addAll(label, node);
-
-        rowCounter++;
     }
 }

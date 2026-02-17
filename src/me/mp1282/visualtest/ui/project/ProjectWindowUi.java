@@ -13,7 +13,6 @@ public class ProjectWindowUi extends Stage {
 
     public ProjectWindowUi(Window owner) {
         initOwner(owner);
-        initModality(Modality.WINDOW_MODAL);
         setTitle("Project Information");
 
         TabPane tabPane = new TabPane(

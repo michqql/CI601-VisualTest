@@ -1,5 +1,6 @@
 package me.mp1282.visualtest.system.inbuilt;
 
+import me.mp1282.visualtest.system.IReset;
 import me.mp1282.visualtest.system.inbuilt.category.BooleanLogicInbuiltMethods;
 import me.mp1282.visualtest.system.inbuilt.category.CollectionsInbuiltMethods;
 import me.mp1282.visualtest.system.inbuilt.category.NumberInbuiltMethods;
@@ -13,7 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class InbuiltMethodRepository {
+public class InbuiltMethodRepository implements IReset {
 
     private static final Set<Class<?>> CLASS_REGISTRY = new HashSet<>();
     /* Static constructor to add all classes that provide inbuilt functions
@@ -55,5 +56,10 @@ public class InbuiltMethodRepository {
 
     public List<Pair<InbuiltFunctionProvider, List<InbuiltMethod>>> getRepository() {
         return repository;
+    }
+
+    @Override
+    public void reset() {
+        /* Do nothing */
     }
 }

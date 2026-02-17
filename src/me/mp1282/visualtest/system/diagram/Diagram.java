@@ -2,8 +2,10 @@ package me.mp1282.visualtest.system.diagram;
 
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.util.Callback;
 import me.mp1282.visualtest.system.executable.DataPort;
@@ -26,6 +28,7 @@ public final class Diagram {
 
     /* Basic information */
     private final ObservableList<DiagramNode> nodes;
+    private final IntegerProperty numberOfNodes;
     private final StringProperty name;
 
     /* Position data */
@@ -34,12 +37,15 @@ public final class Diagram {
     private final ObjectProperty<DiagramZoomLevel> zoomLevel;
 
     public Diagram() {
-        this.unsaved = new SimpleBooleanProperty();
-        this.nodes = FXCollections.observableArrayList(EXTRACTOR);
-        this.name = new SimpleStringProperty( "Diagram-" + UUID.randomUUID());
-        this.translateX = new SimpleDoubleProperty();
-        this.translateY = new SimpleDoubleProperty();
-        this.zoomLevel  = new SimpleObjectProperty<>(DiagramZoomLevel.DEFAULT);
+        this.unsaved       = new SimpleBooleanProperty();
+        this.nodes         = FXCollections.observableArrayList(EXTRACTOR);
+        this.numberOfNodes = new SimpleIntegerProperty();
+        this.name          = new SimpleStringProperty( "Diagram-" + UUID.randomUUID());
+        this.translateX    = new SimpleDoubleProperty();
+        this.translateY    = new SimpleDoubleProperty();
+        this.zoomLevel     = new SimpleObjectProperty<>(DiagramZoomLevel.DEFAULT);
+
+        numberOfNodes.bind(Bindings.size(nodes));
 
         /* When a property value changes, mark the diagram as unsaved */
         nodes     .addListener((InvalidationListener) _ -> unsaved.set(true));
@@ -54,6 +60,10 @@ public final class Diagram {
 
     public ObservableList<DiagramNode> nodesProperty() {
         return nodes;
+    }
+
+    public ReadOnlyIntegerProperty numberOfNodesProperty() {
+        return numberOfNodes;
     }
 
     public StringProperty nameProperty() {

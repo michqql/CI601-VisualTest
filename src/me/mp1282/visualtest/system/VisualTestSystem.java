@@ -1,11 +1,10 @@
 package me.mp1282.visualtest.system;
 
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import me.mp1282.visualtest.system.diagram.DiagramRepository;
 import me.mp1282.visualtest.system.diagram.runtime.RuntimeEnvironmentService;
 import me.mp1282.visualtest.system.inbuilt.InbuiltMethodRepository;
 import me.mp1282.visualtest.system.jarload.LoadedJarRepository;
+import me.mp1282.visualtest.system.persistence.PersistenceService;
 
 /**
  * VisualTestSystem is a singleton class that holds information about the project currently open
@@ -28,7 +27,7 @@ public class VisualTestSystem {
     }
 
     /* Basic project information */
-        private final ProjectInformation projectInformation = new ProjectInformation();
+    private final ProjectInformation projectInformation = new ProjectInformation();
 
     /* Data repositories */
     private final InbuiltMethodRepository inbuiltMethodRepository = new InbuiltMethodRepository();
@@ -37,6 +36,7 @@ public class VisualTestSystem {
 
     /* Services */
     private final RuntimeEnvironmentService runtimeEnvironmentService = new RuntimeEnvironmentService();
+    private final PersistenceService persistenceService = new PersistenceService();
 
     /* Enforce singleton design pattern */
     private VisualTestSystem() {
@@ -58,7 +58,24 @@ public class VisualTestSystem {
         return diagramRepository;
     }
 
-    public RuntimeEnvironmentService getRuntimeEnvironment() {
+    public RuntimeEnvironmentService getRuntimeEnvironmentService() {
         return runtimeEnvironmentService;
+    }
+
+    public PersistenceService getPersistenceService() {
+        return persistenceService;
+    }
+
+    public void resetSystem() {
+        /* Reset any services */
+        runtimeEnvironmentService.reset();
+        persistenceService.reset();
+
+        /* Reset project data */
+        projectInformation.reset();
+        inbuiltMethodRepository.reset();
+        jarRepository.reset();
+        diagramRepository.reset();
+
     }
 }

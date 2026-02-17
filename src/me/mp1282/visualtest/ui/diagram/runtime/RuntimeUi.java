@@ -28,7 +28,7 @@ public class RuntimeUi extends VBox {
 
     public RuntimeUi() {
         this.diagramRepository = VisualTestSystem.getInstance().getDiagramRepository();
-        this.runtime = VisualTestSystem.getInstance().getRuntimeEnvironment();
+        this.runtime = VisualTestSystem.getInstance().getRuntimeEnvironmentService();
 
         this.diagramSelectComboBox = new ComboBox<>(diagramRepository.getDiagrams());
         this.stepModeCheckBox = new CheckBox("Step Mode");

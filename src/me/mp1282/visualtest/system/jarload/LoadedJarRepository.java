@@ -2,11 +2,12 @@ package me.mp1282.visualtest.system.jarload;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import me.mp1282.visualtest.system.IReset;
 
 import java.io.File;
 import java.util.Optional;
 
-public class LoadedJarRepository {
+public class LoadedJarRepository implements IReset {
 
     private final ObservableList<LoadedJar> repository = FXCollections.observableArrayList();
 
@@ -26,5 +27,10 @@ public class LoadedJarRepository {
          * breaks the observable part.
          */
         return repository;
+    }
+
+    @Override
+    public void reset() {
+        repository.clear();
     }
 }

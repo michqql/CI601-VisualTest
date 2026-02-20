@@ -3,9 +3,7 @@ package me.mp1282.visualtest.ui.diagram;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.Point2D;
 import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -20,6 +18,7 @@ import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.ui.diagram.helper.ConnectionHelper;
 import me.mp1282.visualtest.ui.diagram.helper.KeyboardHelper;
 import me.mp1282.visualtest.ui.diagram.helper.SelectionHelper;
+import me.mp1282.visualtest.ui.diagram.node.DiagramNodeHolderUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeInfoUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
@@ -27,8 +26,7 @@ import me.mp1282.visualtest.ui.diagram.port.DataPortConnectorLineUi;
 import me.mp1282.visualtest.ui.diagram.port.ExecutionPathConnectorLineUi;
 import me.mp1282.visualtest.ui.diagram.port.IConnectorUi;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
-import me.mp1282.visualtest.util.DragContext;
-import me.mp1282.visualtest.util.PropertyHelper;
+import me.mp1282.visualtest.util.*;
 
 import java.util.*;
 
@@ -40,19 +38,12 @@ public class DiagramUi extends Pane {
     private final Diagram diagram;
 
     /* Child UI element variables (nodes & connectors) */
-    private final Map<DiagramNode, DiagramNodeUi> nodeToUiMap;
+    private final DiagramNodeHolderUi nodeHolderUi;
     private final Set<DataPortConnectorLineUi> dataPortConnectors;
     private final Set<ExecutionPathConnectorLineUi> executionPathConnectors;
 
     private final DoubleProperty translateX;
     private final DoubleProperty translateY;
-
-    /* Mouse positions */
-    private double lastSceneMouseX;
-    private double lastSceneMouseY;
-    /* TODO: Change this from public to private and introduce a mediator */
-    public final DoubleProperty lastMouseX;
-    public final DoubleProperty lastMouseY;
 
     /* Helpers */
     private final SelectionHelper selectionHelper;
@@ -61,27 +52,25 @@ public class DiagramUi extends Pane {
     /* UI elements that aren't nodes and connected lines*/
     private final Canvas gridCanvas;
 
-    public DiagramUi(Diagram diagram) {
+    public DiagramUi(final Diagram diagram) {
         this.diagram = diagram;
         /* Main UI elements */
-        this.nodeToUiMap = new HashMap<>();
         this.dataPortConnectors = new HashSet<>();
         this.executionPathConnectors = new HashSet<>();
         /* Diagram state */
         this.translateX = new SimpleDoubleProperty();
         this.translateY = new SimpleDoubleProperty();
-        /* Mouse positions */
-        this.lastMouseX = new SimpleDoubleProperty();
-        this.lastMouseY = new SimpleDoubleProperty();
         /* Helpers */
         this.selectionHelper = new SelectionHelper();
         this.connectionHelper = new ConnectionHelper(this);
         /* Other UI elements */
         this.gridCanvas = new Canvas();
+        this.nodeHolderUi = new DiagramNodeHolderUi(diagram,
+                connectionHelper, selectionHelper,
+                this::onDiagramNodeUiAdd, null);
 
         /* Ensure the canvas cannot receive mouse events */
         gridCanvas.setMouseTransparent(true);
-        /* Ensure connecting line is not visible initially */
 
         /* Ensure the diagram node info UI is on the right side of this UI */
         final DiagramNodeInfoUi infoUi = new DiagramNodeInfoUi(selectionHelper.getList());
@@ -95,7 +84,6 @@ public class DiagramUi extends Pane {
         redrawGridCanvas();
 
         /* Bind translate properties to diagram properties */
-        diagram.nodesProperty().addListener((ListChangeListener<? super DiagramNode>) this::handleDiagramNodeChange);
         diagram.translateXProperty().bind(translateX);
         diagram.translateYProperty().bind(translateY);
 
@@ -122,6 +110,7 @@ public class DiagramUi extends Pane {
 
         getChildren().addAll(
                 gridCanvas,
+                nodeHolderUi,
                 connectionHelper.getTempConnectionLine(),
                 connectionHelper.getTempExecutionPathLine(),
                 infoUi
@@ -132,13 +121,33 @@ public class DiagramUi extends Pane {
         return diagram;
     }
 
-    private void handleDiagramNodeChange(ListChangeListener.Change<? extends DiagramNode> change) {
-        while(change.next()) {
-            /* Add UI components for any new diagram nodes */
-            for (DiagramNode added : change.getAddedSubList())
-                createDiagramNodeUi(added);
+    private void onDiagramNodeUiAdd(DiagramNodeUi ui) {
+        /* Add event listeners to the component.
+         *
+         * Can't use mouseClicked for this component because it doesn't
+         * get called for some reason, but mousePressed does.
+         */
+        ui.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMousePressedForNode);
+        ui.addEventHandler(MouseEvent.MOUSE_MOVED,   this::handleMouseMoveForNode);
+        ui.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleMouseDraggedForNode);
 
-            /* TODO: Handle removed items */
+        /* Don't need to bind or set layoutX/Y here as the ExecutableBackedUi
+         * class already binds these properties to the DiagramNode properties.
+         */
+
+        /* Context Menu */
+        ContextMenu contextMenu = new ContextMenu();
+        ui.setContextMenu(contextMenu);
+
+        /* If the Executable that this node is wrapping has no outputs,
+         * add a MenuItem to specify the execution path.
+         */
+        if(ui.getNode().getExecutable().getNumberOfOutputs() == 0) {
+            MenuItem executionPathItem = new MenuItem("Specify 'Execution Path'");
+            /* TODO: disable this menu item if it doesn't make sense as an action the user can take */
+            executionPathItem.setOnAction(_ -> connectionHelper.handleExecutionPathConnecting(ui, true));
+
+            contextMenu.getItems().add(executionPathItem);
         }
     }
 
@@ -148,10 +157,7 @@ public class DiagramUi extends Pane {
      * Handles for both empty area and on UI components.
      */
     private void handleMouseClickInEmptyArea(MouseEvent e) {
-        lastSceneMouseX = e.getSceneX();
-        lastSceneMouseY = e.getSceneY();
-        lastMouseX.set(e.getX());
-        lastMouseY.set(e.getY());
+        MouseDelta.updatePosition(e);
 
         if(e.isPrimaryButtonDown()) {
             connectionHelper.cancelConnection();
@@ -165,12 +171,9 @@ public class DiagramUi extends Pane {
     private void handleMouseDraggedInEmptyArea(MouseEvent e) {
         /* Only translate when middle mouse button is down */
         if(e.isMiddleButtonDown()) {
-            double deltaX = e.getSceneX() - lastSceneMouseX;
-            double deltaY = e.getSceneY() - lastSceneMouseY;
-            lastSceneMouseX = e.getSceneX();
-            lastSceneMouseY = e.getSceneY();
-            lastMouseX.set(e.getX());
-            lastMouseY.set(e.getY());
+            double deltaX = e.getSceneX() - MouseDelta.lastSceneMouseX.get();
+            double deltaY = e.getSceneY() - MouseDelta.lastSceneMouseY.get();
+            MouseDelta.updatePosition(e);
 
             translateX.set(translateX.get() + deltaX);
             translateY.set(translateY.get() + deltaY);
@@ -182,6 +185,7 @@ public class DiagramUi extends Pane {
                     node.setTranslateY(node.getTranslateY() + deltaY);
                 }
             }
+            nodeHolderUi.translate(deltaX, deltaY);
 
             redrawGridCanvas();
             connectionHelper.redrawConnectingLine();
@@ -192,10 +196,7 @@ public class DiagramUi extends Pane {
 
     /* Handles the user moving the mouse within the Diagram ui */
     private void handleMouseMoveInEmptyArea(MouseEvent e) {
-        lastSceneMouseX = e.getSceneX();
-        lastSceneMouseY = e.getSceneY();
-        lastMouseX.set(e.getX());
-        lastMouseY.set(e.getY());
+        MouseDelta.updatePosition(e);
 
         /* This function is called from the 'parent' space (DiagramUi),
          * so no need to convert from local to parent coordinates.
@@ -205,14 +206,7 @@ public class DiagramUi extends Pane {
 
     /* Handles the user clicking on a component */
     private void handleMousePressedForNode(MouseEvent e) {
-        lastSceneMouseX = e.getSceneX();
-        lastSceneMouseY = e.getSceneY();
-        /* Need to translate e.getX/Y() to parent coordinates,
-         * as lastMouseX/Y are in parent space
-         */
-        Point2D pos = ((Node) e.getSource()).localToParent(e.getX(), e.getY());
-        lastMouseX.set(pos.getX());
-        lastMouseY.set(pos.getY());
+        MouseDelta.updatePosition(e);
 
         /* Checks if a diagram node was clicked */
         if(e.getSource() instanceof DiagramNodeUi ui) {
@@ -237,14 +231,7 @@ public class DiagramUi extends Pane {
     }
 
     private void handleMouseMoveForNode(MouseEvent e) {
-        lastSceneMouseX = e.getSceneX();
-        lastSceneMouseY = e.getSceneY();
-        /* Need to translate e.getX/Y() to parent coordinates,
-         * as lastMouseX/Y are in parent space
-         */
-        Point2D pos = ((Node) e.getSource()).localToParent(e.getX(), e.getY());
-        lastMouseX.set(pos.getX());
-        lastMouseY.set(pos.getY());
+        MouseDelta.updatePosition(e);
 
         if(e.getSource() instanceof DiagramNodeUi ui) {
             /* For each data port, check if the user is currently hovering,
@@ -270,17 +257,10 @@ public class DiagramUi extends Pane {
              * the user is not hovering over a data port
              */
             if(e.isPrimaryButtonDown() && ui.hoveredDataPortProperty().get() == null) {
-                final double deltaX = e.getSceneX() - lastSceneMouseX;
-                final double deltaY = e.getSceneY() - lastSceneMouseY;
+                final double deltaX = e.getSceneX() - MouseDelta.lastSceneMouseX.get();
+                final double deltaY = e.getSceneY() - MouseDelta.lastSceneMouseY.get();
 
-                lastSceneMouseX = e.getSceneX();
-                lastSceneMouseY = e.getSceneY();
-                /* Need to translate e.getX/Y() to parent coordinates,
-                 * as lastMouseX/Y are in parent space
-                 */
-                Point2D pos = ((Node) e.getSource()).localToParent(e.getX(), e.getY());
-                lastMouseX.set(pos.getX());
-                lastMouseY.set(pos.getY());
+                MouseDelta.updatePosition(e);
 
                 ui.layoutXProperty().set(ui.layoutXProperty().get() + deltaX);
                 ui.layoutYProperty().set(ui.layoutYProperty().get() + deltaY);
@@ -359,42 +339,6 @@ public class DiagramUi extends Pane {
         }
     }
 
-    private void createDiagramNodeUi(DiagramNode node) {
-        final DiagramNodeUi ui = new DiagramNodeUi(node);
-
-        /* Add event listeners to the component.
-         *
-         * Can't use mouseClicked for this component because it doesn't
-         * get called for some reason, but mousePressed does.
-         */
-        ui.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMousePressedForNode);
-        ui.addEventHandler(MouseEvent.MOUSE_MOVED,   this::handleMouseMoveForNode);
-        ui.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleMouseDraggedForNode);
-
-        /* Don't need to bind or set layoutX/Y here as the ExecutableBackedUi
-         * class already binds these properties to the DiagramNode properties.
-         */
-
-        /* Context Menu */
-        ContextMenu contextMenu = new ContextMenu();
-        ui.setContextMenu(contextMenu);
-
-        /* If the Executable that this node is wrapping has no outputs,
-         * add a MenuItem to specify the execution path.
-         */
-        if(node.getExecutable().getNumberOfOutputs() == 0) {
-            MenuItem executionPathItem = new MenuItem("Specify 'Execution Path'");
-            /* TODO: disable this menu item if it doesn't make sense as an action the user can take */
-            executionPathItem.setOnAction(_ -> connectionHelper.handleExecutionPathConnecting(ui, true));
-
-            contextMenu.getItems().add(executionPathItem);
-        }
-
-        getChildren().add(ui);
-        sortChildrenByZOrder();
-        nodeToUiMap.put(node, ui);
-    }
-
     private void createDataPortConnectorUi(DiagramNodeUi sourceNodeUi, DataPortArea sourcePort,
                                            DiagramNodeUi targetNodeUi, DataPortArea targetPort) {
         /* Check if there is already a UI element for this connection */
@@ -436,6 +380,8 @@ public class DiagramUi extends Pane {
     }
 
     public void rebuildDataPortConnections() {
+        final ReadOnlyMap<DiagramNode, DiagramNodeUi> nodeToUiMap = nodeHolderUi.getNodeToUiMap();
+
         /* Firstly remove all current data port connector UI elements */
         getChildren().removeIf(DataPortConnectorLineUi.class::isInstance);
         dataPortConnectors.clear();
@@ -467,6 +413,8 @@ public class DiagramUi extends Pane {
     }
 
     public void rebuildExecutionPathConnections() {
+        final ReadOnlyMap<DiagramNode, DiagramNodeUi> nodeToUiMap = nodeHolderUi.getNodeToUiMap();
+
         /* Firstly remove all current data port connector UI elements */
         getChildren().removeIf(ExecutionPathConnectorLineUi.class::isInstance);
         executionPathConnectors.clear();
@@ -494,7 +442,8 @@ public class DiagramUi extends Pane {
     }
 
     private void deleteSelected() {
-        ObservableList<ISelectableUi> selected = selectionHelper.getList();
+        final ObservableList<ISelectableUi> selected = selectionHelper.getList();
+
         for (ISelectableUi ui : selected) {
             if(ui instanceof DiagramNodeUi nodeUi) {
                 DiagramNode node = nodeUi.getNode();
@@ -513,22 +462,21 @@ public class DiagramUi extends Pane {
                 });
 
                 diagram.nodesProperty().remove(node);
-                nodeToUiMap.remove(node);
+                /* Don't remove DiagramNodeUi from children, as updating nodeProperty triggers
+                 * removal in DiagramNodeHolderUi.
+                 */
 
             } else if(ui instanceof DataPortConnectorLineUi lineUi) {
                 /* Calling the disconnect logic on the source port will disconnect the target port too */
                 diagram.disconnectDataPort(lineUi.getSourceNodeUi().getNode(), lineUi.getSourcePort().getDataPort());
+                getChildren().remove(ui);
 
             } else if(ui instanceof ExecutionPathConnectorLineUi lineUi) {
                 /* Calling the disconnect logic on the source port will disconnect the target port too */
                 diagram.disconnectExecutionPath(lineUi.getSourceNodeUi().getNode());
+                getChildren().remove(ui);
 
             }
-
-            /* IDE marks this as a suspicious call because technically an ISelectableUi isn't any JavaFX node.
-             * However, in the implementation the UI object is always a node.
-             */
-            getChildren().remove(ui);
         }
 
         selected.clear();

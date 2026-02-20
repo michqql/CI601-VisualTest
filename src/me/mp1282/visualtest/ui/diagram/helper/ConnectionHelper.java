@@ -2,6 +2,7 @@ package me.mp1282.visualtest.ui.diagram.helper;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.geometry.Point2D;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import me.mp1282.visualtest.system.diagram.DiagramNode;
@@ -10,11 +11,12 @@ import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
 import me.mp1282.visualtest.ui.diagram.port.ExecutionPathConnectorLineUi;
 import me.mp1282.visualtest.ui.other.ArrowLineUi;
+import me.mp1282.visualtest.util.MouseDelta;
 import me.mp1282.visualtest.util.Pair;
 
 public class ConnectionHelper {
 
-    private static final Color DATA_PORT_LINE_COLOUR      = Color.BLACK;
+    private static final Color DATA_PORT_LINE_COLOUR      = Color.GREEN;
     private static final Color EXECUTION_PATH_LINE_COLOUR = Color.GREEN;
 
     private final DiagramUi diagramUi;
@@ -34,8 +36,10 @@ public class ConnectionHelper {
 
         tempConnectionLine   .setVisible(false);
         tempConnectionLine   .setStroke(DATA_PORT_LINE_COLOUR);
+        tempConnectionLine.setMouseTransparent(true);
         tempExecutionPathLine.setVisible(false);
         tempExecutionPathLine.setColour(EXECUTION_PATH_LINE_COLOUR);
+        tempExecutionPathLine.setMouseTransparent(true);
 
         dataPortSource         .addListener((_, _, _) -> redrawConnectingLine());
         executionPathSourceNode.addListener((_, _, _) -> redrawConnectingLine());
@@ -141,6 +145,7 @@ public class ConnectionHelper {
     public void redrawConnectingLine() {
         final Pair<DiagramNodeUi, DataPortArea> sourcePair = dataPortSource.get();
         final DiagramNodeUi executionPathNodeUi = executionPathSourceNode.get();
+        final Point2D pos = diagramUi.sceneToLocal(MouseDelta.lastSceneMouseX.get(), MouseDelta.lastSceneMouseY.get());
 
         if(sourcePair != null) {
             /* Draw line between source data port and mouse cursor */
@@ -148,17 +153,17 @@ public class ConnectionHelper {
                     sourcePair.key().getTranslateX() + sourcePair.value().getMidX());
             tempConnectionLine.setStartY(sourcePair.key().getLayoutY() +
                     sourcePair.key().getTranslateY() + sourcePair.value().getMidY());
-            tempConnectionLine.setEndX(diagramUi.lastMouseX.get());
-            tempConnectionLine.setEndY(diagramUi.lastMouseY.get());
+            tempConnectionLine.setEndX(pos.getX());
+            tempConnectionLine.setEndY(pos.getY());
 
         } else if(executionPathNodeUi != null) {
             final DiagramNode node = executionPathNodeUi.getNode();
 
             /* Draw line between source node and mouse cursor */
-            tempExecutionPathLine.setStartX(node.xProperty().get() + (node.widthProperty().get() / 2));
-            tempExecutionPathLine.setStartY(node.yProperty().get() + (node.heightProperty().get() / 2));
-            tempExecutionPathLine.setEndX  (diagramUi.lastMouseX.get());
-            tempExecutionPathLine.setEndY  (diagramUi.lastMouseY.get());
+            tempExecutionPathLine.setStartX(executionPathNodeUi.getTranslateX() + node.xProperty().get() + (node.widthProperty().get() / 2));
+            tempExecutionPathLine.setStartY(executionPathNodeUi.getTranslateY() + node.yProperty().get() + (node.heightProperty().get() / 2));
+            tempExecutionPathLine.setEndX  (pos.getX());
+            tempExecutionPathLine.setEndY  (pos.getY());
         }
 
         /* Redraw line first before setting visibility to remove visual flicker */

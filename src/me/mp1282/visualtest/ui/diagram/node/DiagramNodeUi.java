@@ -1,9 +1,6 @@
 package me.mp1282.visualtest.ui.diagram.node;
 
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.*;
 import javafx.scene.control.Skin;
 import me.mp1282.visualtest.system.diagram.DiagramNode;
 import me.mp1282.visualtest.ui.diagram.IDiagramElement;
@@ -20,18 +17,28 @@ public class DiagramNodeUi extends ExecutableUi implements ISelectableUi, IDiagr
     /* Properties */
     protected final ObjectProperty<DataPortArea> hoveredDataPort;
     protected final BooleanProperty selected;
+    protected final DoubleProperty width;
+    protected final DoubleProperty height;
 
     public DiagramNodeUi(final DiagramNode node) {
         super(node.getExecutable());
         this.node = node;
         this.hoveredDataPort = new SimpleObjectProperty<>();
         this.selected = new SimpleBooleanProperty();
+        this.width = new SimpleDoubleProperty();
+        this.height = new SimpleDoubleProperty();
 
         /* Bind the translation and dimension properties of this UI component
          * to the model (DiagramNode) so that changes are reflected.
+         *
+         * The direction has to be layoutXProperty.bind(node.xProperty) because
+         * sometimes the node's property will have a value first (such as when loading
+         * a saved project), and reversing the statement will overwrite the node's
+         * property with zero.
          */
-        node.xProperty().bindBidirectional(layoutXProperty());
-        node.yProperty().bindBidirectional(layoutYProperty());
+        layoutXProperty().bindBidirectional(node.xProperty());
+        layoutYProperty().bindBidirectional(node.yProperty());
+        /* TODO: Find a way to flip this expression because this will overwrite the node's properties */
         node.widthProperty().bind(widthProperty());   /* node.width  = this.width  */
         node.heightProperty().bind(heightProperty()); /* node.height = this.height */
 

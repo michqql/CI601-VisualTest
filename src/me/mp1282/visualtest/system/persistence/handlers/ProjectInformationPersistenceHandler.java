@@ -29,6 +29,8 @@ public class ProjectInformationPersistenceHandler implements IPersistenceHandler
         ProjectInformation info = VisualTestSystem.getInstance().getProjectInformation();
         info.nameProperty().set(GsonUtil.getAsOrDefault(root.get(NAME_KEY), JsonElement::getAsString, ""));
 
+        /* TODO: Load JAR dependencies */
+
         return info;
     }
 
@@ -38,6 +40,8 @@ public class ProjectInformationPersistenceHandler implements IPersistenceHandler
         meta.addProperty(NAME_KEY, info.nameProperty().get());
         meta.addProperty(VERSION_MAJOR_KEY, info.versionMajorProperty().get());
         meta.addProperty(VERSION_MINOR_KEY, info.versionMinorProperty().get());
+
+        /* TODO: Save JAR dependencies */
 
         return meta;
     }

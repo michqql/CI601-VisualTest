@@ -46,6 +46,7 @@ public class PersistenceService implements IReset {
 
         try (FileReader reader = new FileReader(new File(directory, PROJECT_INFO_FILENAME))) {
             gson.fromJson(reader, ProjectInformation.class);
+            /* TODO: Load JAR dependencies */
         }
 
         File diagramDir = new File(directory, DIAGRAMS_DIRECTORY);

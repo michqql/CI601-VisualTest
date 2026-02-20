@@ -15,10 +15,14 @@ public abstract class Executable extends Identifiable {
                     Executable.class.getSimpleName()
     );
 
+    private IExecutableTypeHolder<? extends Executable> holder;
     private List<DataPort> inputs;
     private List<DataPort> outputs;
 
-    public final void init() {
+    /* Called by the executable holder */
+    public final void init(final IExecutableTypeHolder<? extends Executable> holder) {
+        this.holder = holder;
+
         List<DataPort> localInputs  = new ArrayList<>();
         List<DataPort> localOutputs = new ArrayList<>();
 
@@ -39,6 +43,7 @@ public abstract class Executable extends Identifiable {
     protected abstract void populateInputOutputDataPorts(List<DataPort> inputs, List<DataPort> outputs);
     protected void setup() {}
     public Map<String, String> getInformationMap() { return null; }
+    public abstract String getPersistenceId();
 
     /* Getters */
     public int getNumberOfInputs() {
@@ -55,5 +60,9 @@ public abstract class Executable extends Identifiable {
 
     public List<DataPort> getOutputs() {
         return this.outputs;
+    }
+
+    public IExecutableTypeHolder<? extends Executable> getHolder() {
+        return holder;
     }
 }

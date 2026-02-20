@@ -1,20 +1,19 @@
 package me.mp1282.visualtest.system.inbuilt;
 
 import me.mp1282.visualtest.system.IReset;
+import me.mp1282.visualtest.system.executable.IExecutableTypeHolder;
 import me.mp1282.visualtest.system.inbuilt.category.BooleanLogicInbuiltMethods;
 import me.mp1282.visualtest.system.inbuilt.category.CollectionsInbuiltMethods;
 import me.mp1282.visualtest.system.inbuilt.category.NumberInbuiltMethods;
 import me.mp1282.visualtest.system.inbuilt.category.RandomInbuiltMethods;
+import me.mp1282.visualtest.system.persistence.IPersistenceHandler;
 import me.mp1282.visualtest.util.Pair;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
-public class InbuiltMethodRepository implements IReset {
+public class InbuiltMethodRepository implements IReset, IExecutableTypeHolder<InbuiltMethod> {
 
     private static final Set<Class<?>> CLASS_REGISTRY = new HashSet<>();
     /* Static constructor to add all classes that provide inbuilt functions
@@ -44,8 +43,8 @@ public class InbuiltMethodRepository implements IReset {
             for(Method method : clazz.getDeclaredMethods()) {
                 /* Only static methods should be considered inbuilt functions */
                 if(Modifier.isStatic(method.getModifiers())) {
-                    InbuiltMethod exe = new InbuiltMethod(method);
-                    exe.init();
+                    InbuiltMethod exe = new InbuiltMethod(annotation, method);
+                    exe.init(this);
                     methodList.add(exe);
                 }
             }
@@ -61,5 +60,22 @@ public class InbuiltMethodRepository implements IReset {
     @Override
     public void reset() {
         /* Do nothing */
+    }
+
+    @Override
+    public Optional<InbuiltMethod> findExecutableByPersistenceId(String persistenceId) {
+        for(Pair<InbuiltFunctionProvider, List<InbuiltMethod>> pair : repository) {
+            for(InbuiltMethod method : pair.value()) {
+                if(method.getPersistenceId().equals(persistenceId))
+                    return Optional.of(method);
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    @Override
+    public String getType() {
+        return "inbuilt";
     }
 }

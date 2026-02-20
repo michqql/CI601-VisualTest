@@ -31,6 +31,11 @@ public class ProjectInformation implements IReset {
         return versionMinor;
     }
 
+    public void setVersionToCurrent() {
+        versionMajor.set(VisualTestSystem.SYSTEM_VERSION_MAJOR);
+        versionMinor.set(VisualTestSystem.SYSTEM_VERSION_MINOR);
+    }
+
     @Override
     public void reset() {
         name.set(null);

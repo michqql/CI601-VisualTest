@@ -9,6 +9,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.stage.Window;
 import javafx.util.Duration;
 
 public class ToastUi {
@@ -17,7 +18,7 @@ public class ToastUi {
         throw new IllegalAccessException("ToastUi cannot be instantiated");
     }
 
-    public static void make(Stage owner, String message,
+    public static void make(Window owner, String message,
                             int fadeInMs, int displayMs, int fadeOutMs) {
         Stage toastStage = new Stage();
         toastStage.initOwner(owner);

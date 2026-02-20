@@ -2,9 +2,12 @@ package me.mp1282.visualtest.system;
 
 import me.mp1282.visualtest.system.diagram.DiagramRepository;
 import me.mp1282.visualtest.system.diagram.runtime.RuntimeEnvironmentService;
+import me.mp1282.visualtest.system.executable.IExecutableTypeHolder;
 import me.mp1282.visualtest.system.inbuilt.InbuiltMethodRepository;
 import me.mp1282.visualtest.system.jarload.LoadedJarRepository;
 import me.mp1282.visualtest.system.persistence.PersistenceService;
+
+import java.util.Map;
 
 /**
  * VisualTestSystem is a singleton class that holds information about the project currently open
@@ -26,20 +29,40 @@ public class VisualTestSystem {
         return INSTANCE;
     }
 
+    public static boolean isVersionSupported(int major, int minor) {
+        return major == SYSTEM_VERSION_MAJOR && minor == SYSTEM_VERSION_MINOR;
+    }
+
     /* Basic project information */
-    private final ProjectInformation projectInformation = new ProjectInformation();
+    private final ProjectInformation projectInformation;
 
     /* Data repositories */
-    private final InbuiltMethodRepository inbuiltMethodRepository = new InbuiltMethodRepository();
-    private final LoadedJarRepository jarRepository = new LoadedJarRepository();
-    private final DiagramRepository diagramRepository = new DiagramRepository();
+    private final InbuiltMethodRepository inbuiltMethodRepository;
+    private final LoadedJarRepository jarRepository;
+    private final DiagramRepository diagramRepository;
+    private final Map<String, IExecutableTypeHolder<?>> dataHolderRegistry;
 
     /* Services */
-    private final RuntimeEnvironmentService runtimeEnvironmentService = new RuntimeEnvironmentService();
-    private final PersistenceService persistenceService = new PersistenceService();
+    private final RuntimeEnvironmentService runtimeEnvironmentService;
+    private final PersistenceService persistenceService;
 
     /* Enforce singleton design pattern */
     private VisualTestSystem() {
+        this.projectInformation = new ProjectInformation();
+
+        /* Data repositories */
+        this.inbuiltMethodRepository = new InbuiltMethodRepository();
+        this.jarRepository = new LoadedJarRepository();
+        this.diagramRepository = new DiagramRepository();
+        this.dataHolderRegistry = Map.of(
+            inbuiltMethodRepository.getType(), inbuiltMethodRepository,
+            jarRepository          .getType(), jarRepository,
+            diagramRepository      .getType(), diagramRepository
+        );
+
+        /* Services */
+        this.runtimeEnvironmentService = new RuntimeEnvironmentService();
+        this.persistenceService = new PersistenceService(this);
     }
 
     public ProjectInformation getProjectInformation() {
@@ -76,6 +99,9 @@ public class VisualTestSystem {
         inbuiltMethodRepository.reset();
         jarRepository.reset();
         diagramRepository.reset();
+    }
 
+    public IExecutableTypeHolder<?> findDataHolder(String type) {
+        return dataHolderRegistry.get(type);
     }
 }

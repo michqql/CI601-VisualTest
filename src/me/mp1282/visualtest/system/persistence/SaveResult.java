@@ -1,0 +1,10 @@
+package me.mp1282.visualtest.system.persistence;
+
+public enum SaveResult {
+    SUCCESS,
+    UNKNOWN_FAILURE,
+    NO_PROJECT_DIRECTORY,
+    INVALID_PROJECT_DIRECTORY,
+    FAILED_TO_MAKE_PROJECT_DIRECTORY,
+    FAILED_TO_MAKE_DIAGRAMS_DIRECTORY
+}

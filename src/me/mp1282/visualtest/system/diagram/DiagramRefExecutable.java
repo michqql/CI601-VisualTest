@@ -40,4 +40,9 @@ public class DiagramRefExecutable extends Executable {
     public String getName() {
         return diagram.nameProperty().get();
     }
+
+    @Override
+    public String getPersistenceId() {
+        return diagram.nameProperty().get();
+    }
 }

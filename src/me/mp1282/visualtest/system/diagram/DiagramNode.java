@@ -10,8 +10,6 @@ import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.util.Identifiable;
 import me.mp1282.visualtest.util.Pair;
 
-import java.util.UUID;
-
 public class DiagramNode extends Identifiable {
 
     private static final int COST_OF_NO_INPUTS          = 0;

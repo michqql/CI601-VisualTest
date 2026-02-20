@@ -37,7 +37,6 @@ public class LoadedClass extends Identifiable {
     private void inspectClass() {
         for(Method method : clazz.getDeclaredMethods()) {
             LoadedMethod exe = new LoadedMethod(this, method);
-            exe.init();
             methodMap.put(exe.getSignature(), exe);
         }
     }

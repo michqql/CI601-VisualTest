@@ -36,6 +36,11 @@ public class LoadedMethod extends MethodExecutable {
         return signature;
     }
 
+    @Override
+    public String getPersistenceId() {
+        return signature;
+    }
+
     private static String createStringSignature(Method method) {
         return Modifier.toString(method.getModifiers()) + " " +
                 method.getReturnType().getSimpleName() + " " + method.getName();

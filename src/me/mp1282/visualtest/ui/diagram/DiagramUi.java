@@ -116,6 +116,9 @@ public class DiagramUi extends Pane {
                 connectionHelper.getTempExecutionPathLine(),
                 infoUi
         );
+
+        rebuildDataPortConnections();
+        rebuildExecutionPathConnections();
     }
 
     public Diagram getDiagram() {

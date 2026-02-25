@@ -66,7 +66,7 @@ public abstract class Executable extends Identifiable {
         return (isInputType ? inputs : outputs).get(index);
     }
 
-    public IExecutableTypeHolder<? extends Executable> getHolder() {
+    public final IExecutableTypeHolder<? extends Executable> getHolder() {
         return holder;
     }
 }

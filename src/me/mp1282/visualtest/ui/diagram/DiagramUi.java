@@ -84,11 +84,12 @@ public class DiagramUi extends Pane {
         redrawGridCanvas();
 
         /* Bind translate properties to diagram properties */
-        diagram.translateXProperty().bind(translateX);
-        diagram.translateYProperty().bind(translateY);
+        translateX.bindBidirectional(diagram.translateXProperty());
+        translateY.bindBidirectional(diagram.translateYProperty());
 
-        /* Add event listeners to handle mouse events */
-        /* Using event filter here to process the mouse move event before the ExecutableBackedUi
+        /* Add event listeners to handle mouse events
+         *
+         * Using event filter here to process the mouse move event before the ExecutableBackedUi
          * class gets to process the event, otherwise this method does not get called.
          */
         addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMouseClickInEmptyArea);

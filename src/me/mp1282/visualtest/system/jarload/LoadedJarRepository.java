@@ -4,6 +4,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import me.mp1282.visualtest.system.IReset;
 import me.mp1282.visualtest.system.executable.IExecutableTypeHolder;
+import me.mp1282.visualtest.util.Preconditions;
 
 import java.io.File;
 import java.util.Optional;
@@ -13,6 +14,8 @@ public class LoadedJarRepository implements IReset, IExecutableTypeHolder<Loaded
     private final ObservableList<LoadedJar> repository = FXCollections.observableArrayList();
 
     public Optional<LoadedJar> loadJar(File file) {
+        Preconditions.fileExists(file);
+
         try {
             LoadedJar jar = new LoadedJar(file);
             /* Initialize all the LoadedMethod's */

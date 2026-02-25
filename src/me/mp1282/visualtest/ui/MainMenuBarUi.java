@@ -5,16 +5,17 @@ import javafx.event.ActionEvent;
 import javafx.scene.control.*;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
-import me.mp1282.visualtest.system.ProjectInformation;
+import javafx.stage.Window;
 import me.mp1282.visualtest.system.VisualTestSystem;
-import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.DiagramRepository;
+import me.mp1282.visualtest.system.jarload.LoadedJar;
 import me.mp1282.visualtest.system.jarload.LoadedJarRepository;
 import me.mp1282.visualtest.system.persistence.SaveResult;
 import me.mp1282.visualtest.ui.other.ToastUi;
 import me.mp1282.visualtest.ui.project.ProjectWindowUi;
 
 import java.io.File;
+import java.util.Optional;
 
 public class MainMenuBarUi extends MenuBar {
 
@@ -41,6 +42,7 @@ public class MainMenuBarUi extends MenuBar {
 //            createProjectItem.setOnAction(_ -> createProject());
 
             MenuItem addJarItem = new MenuItem("Add JAR");
+            addJarItem.setOnAction(this::onAddJar);
             MenuItem createDiagramItem = new MenuItem("New Diagram");
             createDiagramItem.setOnAction(_ -> diagramRepository.createDiagram());
 
@@ -102,6 +104,30 @@ public class MainMenuBarUi extends MenuBar {
 //            e.printStackTrace();
 //        }
 //    }
+
+    private void onAddJar(ActionEvent e) {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select JAR");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Jar Files", "*.jar"),
+                new FileChooser.ExtensionFilter("Zip Files", "*.zip", "*.7z"),
+                new FileChooser.ExtensionFilter("All Files", "*.*")
+        );
+
+        /* Set initial directory to current working directory */
+        fileChooser.setInitialDirectory(new File(System.getProperty("user.dir")));
+
+        final File selectedFile = fileChooser.showOpenDialog(getScene().getWindow());
+        final Optional<LoadedJar> jar = this.jarRepository.loadJar(selectedFile);
+        final Window window = getScene().getWindow();
+        jar.ifPresentOrElse(
+                /* JAR loaded successfully */
+                loadedJar -> ToastUi.make(window, loadedJar.getName() + " loaded",
+                        500, 1000, 500),
+                /* Error loading JAR */
+                () -> ToastUi.make(window, "Could not load JAR",
+                        500, 1000, 500));
+    }
 
     private File promptProjectDirectoryChooser(String actionTitle) {
         DirectoryChooser chooser = new DirectoryChooser();

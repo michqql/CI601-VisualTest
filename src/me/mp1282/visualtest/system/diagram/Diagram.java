@@ -11,11 +11,13 @@ import javafx.collections.ObservableList;
 import javafx.util.Callback;
 import me.mp1282.visualtest.system.executable.DataPort;
 import me.mp1282.visualtest.system.executable.Executable;
+import me.mp1282.visualtest.util.DataPortConnectionData;
 import me.mp1282.visualtest.util.DiagramZoomLevel;
 import me.mp1282.visualtest.util.Pair;
 import me.mp1282.visualtest.util.PropertyHelper;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class Diagram {
 
@@ -183,6 +185,15 @@ public final class Diagram {
         return true;
     }
 
+    public DiagramNode getNodeByUniqueId(UUID uuid) {
+        for(DiagramNode node : nodes) {
+            if(node.getUniqueId().equals(uuid))
+                return node;
+        }
+
+        return null;
+    }
+
     public Set<Executable> getExecutablesWithinDiagram() {
         /* Turn the list of nodes into a set of executables */
         Set<Executable> executables = new HashSet<>();
@@ -190,6 +201,26 @@ public final class Diagram {
             executables.add(node.getExecutable());
 
         return executables;
+    }
+
+    public Set<DataPortConnectionData> getAllDataPortConnections() {
+        Set<DataPortConnectionData> result = new HashSet<>();
+        AtomicInteger elementsNotAdded = new AtomicInteger();
+
+        /* Loop over all nodes in this diagram */
+        for(DiagramNode node : nodes) {
+            /* Loop over all data port connections for this node */
+            node.dataConnectionsProperty().forEach((port, other) -> {
+                boolean added = result.add(new DataPortConnectionData(node, other.key(), port, other.value()));
+                if(!added)
+                    elementsNotAdded.incrementAndGet();
+            });
+        }
+
+        /* The number of elements in the set should be equal to the number of elements skipped */
+        assert result.size() == elementsNotAdded.get();
+
+        return result;
     }
 
     public List<Pair<DiagramNode, DataPort>> getDataPortsWithoutConnections() {

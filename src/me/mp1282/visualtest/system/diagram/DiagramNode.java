@@ -18,7 +18,7 @@ public class DiagramNode extends Identifiable {
     private static final int COST_OF_EXECUTION_PATH     = 5;
 
     /* The wrapped executable */
-    private Executable executable;
+    private final Executable executable;
 
     /* The other nodes this node is connected to
      * In the format of:
@@ -64,13 +64,13 @@ public class DiagramNode extends Identifiable {
         return executable;
     }
 
-    public void setExecutable(Executable executable) {
-        /* The executable has changed, clear the connection map.
-         * This will also trigger recalculation of execution cost.
-         */
-        this.dataPortConnectionMap.clear();
-        this.executable = executable;
-    }
+//    public void setExecutable(Executable executable) {
+//        /* The executable has changed, clear the connection map.
+//         * This will also trigger recalculation of execution cost.
+//         */
+//        this.dataPortConnectionMap.clear();
+//        this.executable = executable;
+//    }
 
     public ObservableMap<DataPort, Pair<DiagramNode, DataPort>> dataConnectionsProperty() {
         return dataPortConnectionMap;

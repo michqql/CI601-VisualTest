@@ -1,4 +1,4 @@
-package me.mp1282.visualtest.system.persistence;
+package me.mp1282.visualtest.system.persistence.exceptions;
 
 import me.mp1282.visualtest.system.VisualTestSystem;
 

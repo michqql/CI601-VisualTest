@@ -5,6 +5,7 @@ import me.mp1282.visualtest.system.executable.MethodExecutable;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.HashMap;
 import java.util.List;
 
 public class LoadedMethod extends MethodExecutable {
@@ -25,7 +26,9 @@ public class LoadedMethod extends MethodExecutable {
 
     @Override
     protected void setup() {
-        super.cachedInfoMap.put("Source JAR", loadedClass.getLoadedJar().getName());
+        super.cachedInfoMap = new HashMap<>() {{
+            put("Source JAR", loadedClass.getLoadedJar().getName());
+        }};
     }
 
     public LoadedClass getLoadedClass() {

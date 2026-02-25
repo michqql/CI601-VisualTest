@@ -62,6 +62,10 @@ public abstract class Executable extends Identifiable {
         return this.outputs;
     }
 
+    public DataPort getDataPort(boolean isInputType, int index) {
+        return (isInputType ? inputs : outputs).get(index);
+    }
+
     public IExecutableTypeHolder<? extends Executable> getHolder() {
         return holder;
     }

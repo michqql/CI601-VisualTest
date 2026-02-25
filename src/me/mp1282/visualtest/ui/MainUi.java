@@ -52,7 +52,7 @@ public class MainUi extends VBox {
 
         /* ToolBar UI with key buttons */
         Button loadJar = new Button("Load JAR");
-        loadJar.setOnAction(this::onClickLoadJar);
+//        loadJar.setOnAction(this::onClickLoadJar);
 
         Button newDiagram = new Button("New Diagram");
         newDiagram.setOnAction(this::onClickNewDiagram);
@@ -87,26 +87,7 @@ public class MainUi extends VBox {
         getChildren().addAll(menuBarUi, mainContentSplitPane);
     }
 
-    private void onClickLoadJar(ActionEvent e) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Select JAR to load");
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Jar Files", "*.jar"),
-                new FileChooser.ExtensionFilter("Zip Files", "*.zip", "*.7z"),
-                new FileChooser.ExtensionFilter("All Files", "*.*")
-        );
 
-        final File selectedFile = fileChooser.showOpenDialog(getScene().getWindow());
-        final Optional<LoadedJar> jar = this.jarRepository.loadJar(selectedFile);
-        final Stage stage = (Stage) getScene().getWindow();
-        jar.ifPresentOrElse(
-                /* JAR loaded successfully */
-                loadedJar -> ToastUi.make(stage, loadedJar.getName() + " loaded",
-                        500, 1000, 500),
-                /* Error loading JAR */
-                () -> ToastUi.make(stage, "Could not load JAR",
-                        500, 1000, 500));
-    }
 
     private void onClickNewDiagram(ActionEvent actionEvent) {
         diagramRepository.getDiagrams().add(new Diagram());

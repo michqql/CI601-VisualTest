@@ -10,6 +10,7 @@ import me.mp1282.visualtest.system.diagram.DiagramNode;
 import me.mp1282.visualtest.system.diagram.DiagramRepository;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.system.inbuilt.InbuiltMethod;
+import me.mp1282.visualtest.system.jarload.LoadedJar;
 import me.mp1282.visualtest.system.persistence.handlers.*;
 
 import java.io.File;
@@ -32,6 +33,7 @@ public class PersistenceService implements IReset {
                 .registerTypeAdapter(Diagram.class,            new DiagramPersistenceHandler())
                 .registerTypeAdapter(DiagramNode.class,        new DiagramNodePersistenceHandler())
                 .registerTypeAdapter(Executable.class,         new ExecutablePersistenceHandler())
+                .registerTypeAdapter(LoadedJar.class,          new LoadedJarPersistenceHandler())
                 /* Other settings */
                 .setPrettyPrinting()
                 .create();
@@ -45,8 +47,10 @@ public class PersistenceService implements IReset {
         info.projectDirectoryProperty().set(directory);
 
         try (FileReader reader = new FileReader(new File(directory, PROJECT_INFO_FILENAME))) {
+            /* Result of this call is ignored because ProjectInformation
+             * is a final field within the VisualTestSystem singleton.
+             */
             gson.fromJson(reader, ProjectInformation.class);
-            /* TODO: Load JAR dependencies */
         }
 
         File diagramDir = new File(directory, DIAGRAMS_DIRECTORY);

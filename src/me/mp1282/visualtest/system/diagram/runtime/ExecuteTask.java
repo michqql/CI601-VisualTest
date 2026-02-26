@@ -59,7 +59,7 @@ public class ExecuteTask {
 
         /* Execute this node */
         log.log(System.Logger.Level.INFO, "Executing: " + exe.getName());
-        exe.execute(inputs, outputs);
+        exe.execute(inputs, outputs, currentNode.getExtraData());
 
         /* Store outputs */
         for(OutputReturn outputPort : currentNode.getOutputs()) {

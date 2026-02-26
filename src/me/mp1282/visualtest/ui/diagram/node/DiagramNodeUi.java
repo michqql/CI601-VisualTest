@@ -5,6 +5,8 @@ import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.ui.diagram.IDiagramElement;
+import me.mp1282.visualtest.ui.diagram.node.skin.DefaultExecutableSkin;
+import me.mp1282.visualtest.ui.diagram.node.skin.SkinFactory;
 import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
 
@@ -60,7 +62,7 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
 
     @Override
     protected Skin<?> createDefaultSkin() {
-        return new DiagramNodeUiSkin(this);
+        return SkinFactory.createSkin(this);
     }
 
     public DiagramNode getNode() {

@@ -7,6 +7,7 @@ import me.mp1282.visualtest.system.executable.data.ParameterType;
 import me.mp1282.visualtest.system.executable.data.ReturnType;
 
 import java.util.List;
+import java.util.Map;
 
 public class DiagramRefExecutable extends Executable {
 
@@ -32,7 +33,8 @@ public class DiagramRefExecutable extends Executable {
     }
 
     @Override
-    public void execute(Object[] inputs, Object[] outputs) {
+    public void execute(Object[] inputs, Object[] outputs,
+                        final Map<String, Object> extraData) {
 
     }
 

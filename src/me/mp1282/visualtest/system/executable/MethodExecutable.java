@@ -6,6 +6,7 @@ import me.mp1282.visualtest.system.executable.data.ReturnType;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A MethodExecutable is responsible for executing a Java {@link Method}
@@ -19,7 +20,8 @@ public abstract class MethodExecutable extends Executable {
     }
 
     @Override
-    public void execute(Object[] inputs, Object[] outputs) throws Exception {
+    public void execute(Object[] inputs, Object[] outputs,
+                        final Map<String, Object> extraData) throws Exception {
         Object returnedValue = this.method.invoke(null, inputs);
         /* A MethodExecutable can only ever have 0 or 1 outputs, so write to the array
          * if this method returns an output. Otherwise, do nothing.

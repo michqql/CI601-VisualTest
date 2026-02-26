@@ -6,10 +6,7 @@ import me.mp1282.visualtest.system.executable.data.ParameterType;
 import me.mp1282.visualtest.system.executable.data.ReturnType;
 import me.mp1282.visualtest.util.Identifiable;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class DiagramNode extends Identifiable {
 
@@ -38,6 +35,8 @@ public class DiagramNode extends Identifiable {
     private final DoubleProperty width;
     private final DoubleProperty height;
 
+    private final Map<String, Object> extraData;
+
     public DiagramNode(Executable executable) {
         super();
         this.executable                  = executable;
@@ -51,6 +50,8 @@ public class DiagramNode extends Identifiable {
         this.y                           = new SimpleDoubleProperty();
         this.width                       = new SimpleDoubleProperty();
         this.height                      = new SimpleDoubleProperty();
+
+        this.extraData = new HashMap<>();
 
         /* Recalculate execution cost when connections change */
         calculateExecutionCost(); /* Calculate initial value */
@@ -94,6 +95,10 @@ public class DiagramNode extends Identifiable {
 
     public DoubleProperty heightProperty() {
         return height;
+    }
+
+    public Map<String, Object> getExtraData() {
+        return extraData;
     }
 
     /* Execution cost is calculated by these rules:

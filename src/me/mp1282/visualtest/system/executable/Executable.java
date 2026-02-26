@@ -7,6 +7,7 @@ import me.mp1282.visualtest.system.executable.data.ReturnType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * An abstract class that wraps an underlying executable piece of code.
@@ -53,9 +54,13 @@ public abstract class Executable {
      *
      * @param inputs - A generic list of inputs.
      * @param outputs - A generic list of outputs.
+     * @param extraData - Extra state data that is passed from the DiagramNode containing this Executable
+     *                    to support the execution of the underlying code.
      * @throws Exception - Numerous exceptions can be thrown during the execution of the underlying function.
      */
-    public abstract void execute(final Object[] inputs, final Object[] outputs) throws Exception;
+    public abstract void execute(final Object[] inputs,
+                                 final Object[] outputs,
+                                 final Map<String, Object> extraData) throws Exception;
 
     /**
      * Gets the name of the underlying executable.

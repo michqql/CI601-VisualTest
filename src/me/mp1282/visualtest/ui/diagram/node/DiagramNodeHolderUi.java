@@ -2,17 +2,13 @@ package me.mp1282.visualtest.ui.diagram.node;
 
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.Point2D;
 import javafx.scene.Node;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import me.mp1282.visualtest.system.diagram.Diagram;
-import me.mp1282.visualtest.system.diagram.DiagramNode;
+import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.ui.diagram.IDiagramElement;
 import me.mp1282.visualtest.ui.diagram.helper.ConnectionHelper;
 import me.mp1282.visualtest.ui.diagram.helper.SelectionHelper;
-import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
-import me.mp1282.visualtest.util.MouseDelta;
 import me.mp1282.visualtest.util.ReadOnlyMap;
 
 import java.util.HashMap;

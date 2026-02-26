@@ -1,10 +1,11 @@
 package me.mp1282.visualtest.system.diagram.runtime;
 
 import me.mp1282.visualtest.system.diagram.Diagram;
-import me.mp1282.visualtest.system.diagram.DiagramNode;
-import me.mp1282.visualtest.system.executable.DataPort;
+import me.mp1282.visualtest.system.diagram.node.DiagramNode;
+import me.mp1282.visualtest.system.diagram.node.IDataPort;
+import me.mp1282.visualtest.system.diagram.node.OutputReturn;
 import me.mp1282.visualtest.system.executable.Executable;
-import me.mp1282.visualtest.util.Pair;
+import me.mp1282.visualtest.system.executable.data.ParameterType;
 
 import java.util.*;
 
@@ -15,7 +16,7 @@ public class ExecuteTask {
 
     private final Diagram diagram;
     private final List<DiagramNode> executionOrder;
-    private final Map<Pair<DiagramNode, DataPort>, Object> inputPortToDataMap;
+    private final Map<IDataPort<ParameterType>, Object> inputPortToDataMap;
 
     public ExecuteTask(Diagram diagram) {
         this.diagram = diagram;
@@ -45,27 +46,26 @@ public class ExecuteTask {
         final RunStep result = new RunStep(diagram, currentNode);
 
         /* Prepare inputs for current node */
-        Object[] inputs = new Object[exe.getNumberOfInputs()];
-        for(DataPort inputPort : exe.getInputs()) {
-            Object input = inputPortToDataMap.remove(new Pair<>(currentNode, inputPort));
-            inputs[inputPort.portIndex()] = input;
+        Object[] inputs = new Object[exe.getNumberOfParameters()];
+        for(IDataPort<ParameterType> inputPort : currentNode.getInputs()) {
+            Object inputValue = inputPortToDataMap.remove(inputPort);
+            inputs[inputPort.getType().getIndex()] = inputValue;
         }
 
         result.setInputs(inputs);
 
         /* Prepare outputs for current node */
-        Object[] outputs = new Object[exe.getNumberOfOutputs()];
+        Object[] outputs = new Object[exe.getNumberOfReturnValues()];
 
         /* Execute this node */
         log.log(System.Logger.Level.INFO, "Executing: " + exe.getName());
         exe.execute(inputs, outputs);
 
         /* Store outputs */
-        for(DataPort outputPort : exe.getOutputs()) {
-            Object output = outputs[outputPort.portIndex()];
+        for(OutputReturn outputPort : currentNode.getOutputs()) {
+            Object output = outputs[outputPort.getType().getIndex()];
             log.log(System.Logger.Level.INFO, "Output: " + output);
-            Pair<DiagramNode, DataPort> nextInput = currentNode.dataConnectionsProperty()
-                    .get(outputPort);
+            IDataPort<ParameterType> nextInput = outputPort.getTo();
 
             inputPortToDataMap.put(nextInput, output);
         }

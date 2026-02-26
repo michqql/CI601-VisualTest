@@ -18,7 +18,7 @@ import java.util.Map;
 public class VisualTestSystem {
 
     public static final int SYSTEM_VERSION_MAJOR = 0;
-    public static final int SYSTEM_VERSION_MINOR = 1;
+    public static final int SYSTEM_VERSION_MINOR = 2;
 
     /* Singleton class */
     private static VisualTestSystem INSTANCE;

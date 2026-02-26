@@ -6,10 +6,9 @@ import me.mp1282.visualtest.system.IReset;
 import me.mp1282.visualtest.system.ProjectInformation;
 import me.mp1282.visualtest.system.VisualTestSystem;
 import me.mp1282.visualtest.system.diagram.Diagram;
-import me.mp1282.visualtest.system.diagram.DiagramNode;
+import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.diagram.DiagramRepository;
 import me.mp1282.visualtest.system.executable.Executable;
-import me.mp1282.visualtest.system.inbuilt.InbuiltMethod;
 import me.mp1282.visualtest.system.jarload.LoadedJar;
 import me.mp1282.visualtest.system.persistence.handlers.*;
 

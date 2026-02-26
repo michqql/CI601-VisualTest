@@ -5,11 +5,10 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Point2D;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
-import me.mp1282.visualtest.system.diagram.DiagramNode;
+import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.ui.diagram.DiagramUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
-import me.mp1282.visualtest.ui.diagram.port.ExecutionPathConnectorLineUi;
 import me.mp1282.visualtest.ui.other.ArrowLineUi;
 import me.mp1282.visualtest.util.MouseDelta;
 import me.mp1282.visualtest.util.Pair;
@@ -76,18 +75,18 @@ public class ConnectionHelper {
         if (sourcePair == null) {
             dataPortSource.set(new Pair<>(clickedNodeUi, clickedNodeUi.hoveredDataPortProperty().get()));
         } else {
-            boolean connected = diagramUi.getDiagram().connectDataPorts(
-                    /* Source Node => */ sourcePair.key().getNode(),
-                    /* Source Port => */ sourcePair.value().getDataPort(),
-                    /* Target Node => */ clickedNodeUi.getNode(),
-                    /* Target Port => */ hoveredPort.getDataPort());
+//            boolean connected = diagramUi.getDiagram().connectDataPorts(
+//                    /* Source Node => */ sourcePair.key().getNode(),
+//                    /* Source Port => */ sourcePair.value().getDataPort(),
+//                    /* Target Node => */ clickedNodeUi.getNode(),
+//                    /* Target Port => */ hoveredPort.getDataPort());
 
-            if (connected) {
-                diagramUi.rebuildDataPortConnections();
-
-                /* Set source variables back to null as they are no longer needed */
-                dataPortSource.set(null);
-            }
+//            if (connected) {
+//                diagramUi.rebuildDataPortConnections();
+//
+//                /* Set source variables back to null as they are no longer needed */
+//                dataPortSource.set(null);
+//            }
         }
 
         /* Handled this event */

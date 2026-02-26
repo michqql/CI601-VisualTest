@@ -44,7 +44,7 @@ public class ExecutableListUi extends VBox {
         /* Otherwise, create a new tab for this class */
         Tab classTab = new Tab(clazz.getSimpleName());
         classTab.setUserData(clazz);
-        classTab.setContent(createList(classSelectedEvent.getLoadedClass().getMethodMap().values()));
+        classTab.setContent(createList(classSelectedEvent.getLoadedClass().getMethods()));
 
         tabPane.getTabs().add(classTab);
         tabPane.getSelectionModel().select(classTab);

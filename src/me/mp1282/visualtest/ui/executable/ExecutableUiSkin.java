@@ -7,9 +7,8 @@ import javafx.scene.control.SkinBase;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 import me.mp1282.visualtest.system.executable.Executable;
-import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
-
-import java.util.List;
+import me.mp1282.visualtest.system.executable.data.ParameterType;
+import me.mp1282.visualtest.system.executable.data.ReturnType;
 
 public class ExecutableUiSkin extends SkinBase<ExecutableUi> {
 
@@ -34,8 +33,6 @@ public class ExecutableUiSkin extends SkinBase<ExecutableUi> {
 
         /* Draw the skin */
         redraw();
-        /* Redraw the skin when requested */
-        executableUi.requestRedrawProperty.addListener((_, _, _) -> redraw());
 
     }
 
@@ -62,13 +59,31 @@ public class ExecutableUiSkin extends SkinBase<ExecutableUi> {
         gc.setTextBaseline(VPos.CENTER);
         gc.fillText(exe.getName(), canvas.getWidth() / 2, canvas.getHeight() / 2);
 
-        /* Draw the input/output DataPort lines - equally spaced and centered */
-        final List<DataPortArea> areas = ui.getCachedPortAreas();
-        for(DataPortArea area : areas) {
-            gc.setFill(Color.BLACK);
+        drawDataPorts(gc);
+    }
+
+    protected void drawDataPorts(final GraphicsContext gc) {
+        final ExecutableUi ui = getSkinnable();
+        final Executable exe = ui.getExecutable();
+        final int nInputs = exe.getNumberOfParameters();
+        final double inputSpacing = ui.getWidth() / nInputs;
+        final int nOutputs = ui.getExecutable().getNumberOfReturnValues();
+        final double outputSpacing = ui.getWidth() / nOutputs;
+
+        gc.setFill(Color.BLACK);
+
+        for (ParameterType type : exe.getParameterTypes()) {
             gc.fillRect(
-                    /* x      => */ area.getLineStartX(),
-                    /* y      => */ area.getLineStartY(),
+                    /* x      => */ (inputSpacing / 2D) + (inputSpacing * type.getIndex()),
+                    /* y      => */ ExecutableUiSkin.TOP_BOTTOM_BOX_PADDING - ExecutableUiSkin.DATA_PORT_LENGTH,
+                    /* width  => */ 1,
+                    /* height => */ DATA_PORT_LENGTH);
+        }
+
+        for(ReturnType type : exe.getReturnTypes()) {
+            gc.fillRect(
+                    /* x      => */ (outputSpacing / 2D) + (outputSpacing * type.getIndex()),
+                    /* y      => */ ui.getHeight() - ExecutableUiSkin.TOP_BOTTOM_BOX_PADDING,
                     /* width  => */ 1,
                     /* height => */ DATA_PORT_LENGTH);
         }

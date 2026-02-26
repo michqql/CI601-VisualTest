@@ -2,10 +2,8 @@ package me.mp1282.visualtest.system.persistence.handlers;
 
 import com.google.gson.*;
 import me.mp1282.visualtest.system.diagram.Diagram;
-import me.mp1282.visualtest.system.diagram.DiagramNode;
-import me.mp1282.visualtest.system.executable.DataPort;
+import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.persistence.IPersistenceHandler;
-import me.mp1282.visualtest.util.DataPortConnectionData;
 import me.mp1282.visualtest.util.GsonUtil;
 
 import java.lang.reflect.Type;
@@ -28,26 +26,26 @@ public class DiagramPersistenceHandler implements IPersistenceHandler<Diagram> {
             diagram.nodesProperty().add(ctx.deserialize(nodeElement, DiagramNode.class));
         }
 
-        final JsonArray connectionArray = root.getAsJsonArray(CONNECTIONS_KEY);
-        for(JsonElement connElement : connectionArray) {
-            JsonObject conn = connElement.getAsJsonObject();
-
-            /* A */
-            UUID nodeAId = ctx.deserialize(conn.get("node_a"), UUID.class);
-            boolean portAInput = conn.get("port_a_input").getAsBoolean();
-            int portAIndex = conn.get("port_a_index").getAsInt();
-            DiagramNode nodeA = diagram.getNodeByUniqueId(nodeAId);
-            DataPort portA = nodeA.getExecutable().getDataPort(portAInput, portAIndex);
-
-            /* B */
-            UUID nodeBId = ctx.deserialize(conn.get("node_b"), UUID.class);
-            boolean portBInput = conn.get("port_b_input").getAsBoolean();
-            int portBIndex = conn.get("port_b_index").getAsInt();
-            DiagramNode nodeB = diagram.getNodeByUniqueId(nodeBId);
-            DataPort portB = nodeB.getExecutable().getDataPort(portBInput, portBIndex);
-
-            diagram.connectDataPorts(nodeA, portA, nodeB, portB);
-        }
+//        final JsonArray connectionArray = root.getAsJsonArray(CONNECTIONS_KEY);
+//        for(JsonElement connElement : connectionArray) {
+//            JsonObject conn = connElement.getAsJsonObject();
+//
+//            /* A */
+//            UUID nodeAId = ctx.deserialize(conn.get("node_a"), UUID.class);
+//            boolean portAInput = conn.get("port_a_input").getAsBoolean();
+//            int portAIndex = conn.get("port_a_index").getAsInt();
+//            DiagramNode nodeA = diagram.getNodeByUniqueId(nodeAId);
+//            DataPort portA = nodeA.getExecutable().getDataPort(portAInput, portAIndex);
+//
+//            /* B */
+//            UUID nodeBId = ctx.deserialize(conn.get("node_b"), UUID.class);
+//            boolean portBInput = conn.get("port_b_input").getAsBoolean();
+//            int portBIndex = conn.get("port_b_index").getAsInt();
+//            DiagramNode nodeB = diagram.getNodeByUniqueId(nodeBId);
+//            DataPort portB = nodeB.getExecutable().getDataPort(portBInput, portBIndex);
+//
+//            diagram.connectDataPorts(nodeA, portA, nodeB, portB);
+//        }
 
         return diagram;
     }
@@ -64,22 +62,22 @@ public class DiagramPersistenceHandler implements IPersistenceHandler<Diagram> {
         }
         root.add(NODES_KEY, nodeArray);
 
-        final JsonArray connectionArray = new JsonArray();
-        for(DataPortConnectionData data : diagram.getAllDataPortConnections()) {
-            JsonObject conn = new JsonObject();
-            /* A */
-            conn.add("node_a", ctx.serialize(data.nodeA().getUniqueId()));
-            conn.addProperty("port_a_input", data.portA().inputPort());
-            conn.addProperty("port_a_index", data.portA().portIndex());
-
-            /* B */
-            conn.add("node_b", ctx.serialize(data.nodeB().getUniqueId()));
-            conn.addProperty("port_b_input", data.portB().inputPort());
-            conn.addProperty("port_b_index", data.portB().portIndex());
-
-            connectionArray.add(conn);
-        }
-        root.add(CONNECTIONS_KEY, connectionArray);
+//        final JsonArray connectionArray = new JsonArray();
+//        for(DataPortConnectionData data : diagram.getAllDataPortConnections()) {
+//            JsonObject conn = new JsonObject();
+//            /* A */
+//            conn.add("node_a", ctx.serialize(data.nodeA().getUniqueId()));
+//            conn.addProperty("port_a_input", data.portA().inputPort());
+//            conn.addProperty("port_a_index", data.portA().portIndex());
+//
+//            /* B */
+//            conn.add("node_b", ctx.serialize(data.nodeB().getUniqueId()));
+//            conn.addProperty("port_b_input", data.portB().inputPort());
+//            conn.addProperty("port_b_index", data.portB().portIndex());
+//
+//            connectionArray.add(conn);
+//        }
+//        root.add(CONNECTIONS_KEY, connectionArray);
 
         return root;
     }

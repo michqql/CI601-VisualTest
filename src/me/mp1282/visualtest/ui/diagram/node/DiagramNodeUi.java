@@ -1,32 +1,32 @@
 package me.mp1282.visualtest.ui.diagram.node;
 
 import javafx.beans.property.*;
+import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
-import me.mp1282.visualtest.system.diagram.DiagramNode;
+import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.ui.diagram.IDiagramElement;
 import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
-import me.mp1282.visualtest.ui.executable.ExecutableUi;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
 
-/* An ExecutableBackedUi has a DiagramNode as a model.
+/**
+ * An ExecutableBackedUi has a DiagramNode as a model.
  * The UI component reflects the Diagram node's state.
  */
-public class DiagramNodeUi extends ExecutableUi implements ISelectableUi, IDiagramElement {
+public class DiagramNodeUi extends Control implements IDiagramElement, ISelectableUi {
 
     private final DiagramNode node;
     /* Properties */
     protected final ObjectProperty<DataPortArea> hoveredDataPort;
-    protected final BooleanProperty selected;
-    protected final DoubleProperty width;
-    protected final DoubleProperty height;
+    protected final BooleanProperty              selected;
+    protected final DoubleProperty               width;
+    protected final DoubleProperty               height;
 
     public DiagramNodeUi(final DiagramNode node) {
-        super(node.getExecutable());
-        this.node = node;
+        this.node            = node;
         this.hoveredDataPort = new SimpleObjectProperty<>();
-        this.selected = new SimpleBooleanProperty();
-        this.width = new SimpleDoubleProperty();
-        this.height = new SimpleDoubleProperty();
+        this.selected        = new SimpleBooleanProperty();
+        this.width           = new SimpleDoubleProperty();
+        this.height          = new SimpleDoubleProperty();
 
         /* Bind the translation and dimension properties of this UI component
          * to the model (DiagramNode) so that changes are reflected.
@@ -42,16 +42,16 @@ public class DiagramNodeUi extends ExecutableUi implements ISelectableUi, IDiagr
         node.widthProperty().bind(widthProperty());   /* node.width  = this.width  */
         node.heightProperty().bind(heightProperty()); /* node.height = this.height */
 
-        /* Tell the UI to redraw when:
-         * - the hovered data port changes
-         * - the UI is hovered
-         * - the UI is selected
-         * - the execution cost changes
-         */
-        hoveredDataPort             .addListener((_, _, _) -> requestRedraw());
-        hoverProperty()             .addListener((_, _, _) -> requestRedraw());
-        selected                    .addListener((_, _, _) -> requestRedraw());
-        node.executionCostProperty().addListener((_, _, _) -> requestRedraw());
+//        /* Tell the UI to redraw when:
+//         * - the hovered data port changes
+//         * - the UI is hovered
+//         * - the UI is selected
+//         * - the execution cost changes
+//         */
+//        hoveredDataPort             .addListener((_, _, _) -> requestRedraw());
+//        hoverProperty()             .addListener((_, _, _) -> requestRedraw());
+//        selected                    .addListener((_, _, _) -> requestRedraw());
+//        node.executionCostProperty().addListener((_, _, _) -> requestRedraw());
 
         /* Set a default dimension of 150x150 */
         setWidth(110);

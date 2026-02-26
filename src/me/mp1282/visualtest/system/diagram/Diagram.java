@@ -1,31 +1,20 @@
 package me.mp1282.visualtest.system.diagram;
 
 import javafx.beans.InvalidationListener;
-import javafx.beans.Observable;
-import javafx.beans.binding.Bindings;
-import javafx.beans.binding.IntegerBinding;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.util.Callback;
-import me.mp1282.visualtest.system.executable.DataPort;
+import me.mp1282.visualtest.system.diagram.node.DiagramNode;
+import me.mp1282.visualtest.system.diagram.node.IDataPort;
+import me.mp1282.visualtest.system.diagram.node.InputParameter;
+import me.mp1282.visualtest.system.diagram.node.OutputReturn;
 import me.mp1282.visualtest.system.executable.Executable;
-import me.mp1282.visualtest.util.DataPortConnectionData;
+import me.mp1282.visualtest.system.executable.data.IDataType;
 import me.mp1282.visualtest.util.DiagramZoomLevel;
-import me.mp1282.visualtest.util.Pair;
-import me.mp1282.visualtest.util.PropertyHelper;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public final class Diagram {
-
-    /* The extractor is used to monitor changes to the connections
-     * of each DiagramNode within the nodes list.
-     */
-    private static final Callback<DiagramNode, Observable[]> EXTRACTOR = (node) ->
-            new Observable[] { node.dataConnectionsProperty() };
 
     private final BooleanProperty unsaved;
 
@@ -40,7 +29,7 @@ public final class Diagram {
 
     public Diagram() {
         this.unsaved       = new SimpleBooleanProperty();
-        this.nodes         = FXCollections.observableArrayList(EXTRACTOR);
+        this.nodes         = FXCollections.observableArrayList();
         this.name          = new SimpleStringProperty("Diagram-" + UUID.randomUUID());
         this.translateX    = new SimpleDoubleProperty();
         this.translateY    = new SimpleDoubleProperty();
@@ -87,73 +76,72 @@ public final class Diagram {
     /* Create a flow connection between two flow ports */
     public boolean connectExecutionPath(DiagramNode source, DiagramNode target) {
 
-        if(canConnectExecutionPath(source, target) && canConnectDataPorts(source, target)) {
-            source.executionPathNodeAfterProperty().set(target);
-            target.executionPathNodeBeforeProperty().set(source);
-            return true;
-        }
+//        if(canConnectExecutionPath(source, target) && canConnectDataPorts(source, target)) {
+//            source.executionPathNodeAfterProperty().set(target);
+//            target.executionPathNodeBeforeProperty().set(source);
+//            return true;
+//        }
         return false;
     }
 
     public void disconnectExecutionPath(DiagramNode node) {
-        final DiagramNode before = node.executionPathNodeBeforeProperty().get();
-        final DiagramNode after  = node.executionPathNodeAfterProperty().get();
-
-        if(before != null) before.executionPathNodeAfterProperty().set(null);
-        if(after  != null) after .executionPathNodeBeforeProperty().set(null);
-
-        /* Set the before and after for the node passed to this function to null */
-        node.executionPathNodeBeforeProperty().set(null);
-        node.executionPathNodeAfterProperty().set(null);
+//        final DiagramNode before = node.executionPathNodeBeforeProperty().get();
+//        final DiagramNode after  = node.executionPathNodeAfterProperty().get();
+//
+//        if(before != null) before.executionPathNodeAfterProperty().set(null);
+//        if(after  != null) after .executionPathNodeBeforeProperty().set(null);
+//
+//        /* Set the before and after for the node passed to this function to null */
+//        node.executionPathNodeBeforeProperty().set(null);
+//        node.executionPathNodeAfterProperty().set(null);
     }
 
     /* Create a connection between two data ports */
-    public boolean connectDataPorts(DiagramNode source, DataPort sourcePort,
-                                    DiagramNode target, DataPort targetPort) {
+    public boolean connectDataPorts(OutputReturn output, InputParameter input) {
 
-        /* The source and target port cannot be both inputs or both outputs */
-        if(sourcePort.inputPort() == targetPort.inputPort())
-            return false;
-
-        if(canConnectExecutionPath(source, target) && canConnectDataPorts(source, target)) {
-            source.dataConnectionsProperty().put(sourcePort, new Pair<>(target, targetPort));
-            target.dataConnectionsProperty().put(targetPort, new Pair<>(source, sourcePort));
-            return true;
-        }
+//        /* The source and target port cannot be both inputs or both outputs */
+//        if(sourcePort.inputPort() == targetPort.inputPort())
+//            return false;
+//
+//        if(canConnectExecutionPath(source, target) && canConnectDataPorts(source, target)) {
+//            source.dataConnectionsProperty().put(sourcePort, new Pair<>(target, targetPort));
+//            target.dataConnectionsProperty().put(targetPort, new Pair<>(source, sourcePort));
+//            return true;
+//        }
         return false;
     }
 
     /* Removes a connection between two data ports provided one of them */
-    public void disconnectDataPort(DiagramNode source, DataPort sourcePort) {
-        Pair<DiagramNode, DataPort> pair = source.dataConnectionsProperty().remove(sourcePort);
-        if(pair != null)
-            pair.key().dataConnectionsProperty().remove(pair.value());
+    public void disconnectDataPort(IDataPort<? extends IDataType> dataPort) {
+//        Pair<DiagramNode, DataPort> pair = source.dataConnectionsProperty().remove(sourcePort);
+//        if(pair != null)
+//            pair.key().dataConnectionsProperty().remove(pair.value());
     }
 
     /* Check if two flow ports can be connected together */
     public boolean canConnectExecutionPath(DiagramNode sourceNode, DiagramNode targetNode) {
-        /* Check to see if this connection would result in a cyclic dependency */
-        Set<DiagramNode> visitedNodes = new HashSet<>();
-        Queue<DiagramNode> nodesToVisit = new LinkedList<>();
-        nodesToVisit.add(targetNode);
-
-        while(!nodesToVisit.isEmpty()) {
-            DiagramNode currentNode = nodesToVisit.poll();
-            if(currentNode.equals(sourceNode)) {
-                /* Cycle detected */
-                return false;
-            }
-
-            visitedNodes.add(currentNode);
-
-            /* Add connected flow nodes that haven't already been visited */
-            PropertyHelper.whenPresentForEach(
-                    List.of(currentNode.executionPathNodeBeforeProperty(), currentNode.executionPathNodeAfterProperty()),
-                    node -> {
-                        if(!visitedNodes.contains(node))
-                            nodesToVisit.add(node);
-                    });
-        }
+//        /* Check to see if this connection would result in a cyclic dependency */
+//        Set<DiagramNode> visitedNodes = new HashSet<>();
+//        Queue<DiagramNode> nodesToVisit = new LinkedList<>();
+//        nodesToVisit.add(targetNode);
+//
+//        while(!nodesToVisit.isEmpty()) {
+//            DiagramNode currentNode = nodesToVisit.poll();
+//            if(currentNode.equals(sourceNode)) {
+//                /* Cycle detected */
+//                return false;
+//            }
+//
+//            visitedNodes.add(currentNode);
+//
+//            /* Add connected flow nodes that haven't already been visited */
+//            PropertyHelper.whenPresentForEach(
+//                    List.of(currentNode.executionPathNodeBeforeProperty(), currentNode.executionPathNodeAfterProperty()),
+//                    node -> {
+//                        if(!visitedNodes.contains(node))
+//                            nodesToVisit.add(node);
+//                    });
+//        }
 
         /* No cycle was detected, this connection is valid */
         return true;
@@ -161,25 +149,25 @@ public final class Diagram {
 
     /* Check if two data ports can be connected together */
     public boolean canConnectDataPorts(DiagramNode sourceNode, DiagramNode targetNode) {
-        /* Check to see if this connection would result in a cyclic dependency */
-        Set<DiagramNode> visitedNodes = new HashSet<>();
-        Queue<DiagramNode> nodesToVisit = new LinkedList<>();
-        nodesToVisit.add(targetNode);
-        while(!nodesToVisit.isEmpty()) {
-            DiagramNode currentNode = nodesToVisit.poll();
-            if(currentNode.equals(sourceNode)) {
-                /* Cycle detected */
-                return false;
-            }
-
-            visitedNodes.add(currentNode);
-
-            for(Pair<DiagramNode, DataPort> connectedNode : currentNode.dataConnectionsProperty().values()) {
-                if(!visitedNodes.contains(connectedNode.key())) {
-                    nodesToVisit.add(connectedNode.key());
-                }
-            }
-        }
+//        /* Check to see if this connection would result in a cyclic dependency */
+//        Set<DiagramNode> visitedNodes = new HashSet<>();
+//        Queue<DiagramNode> nodesToVisit = new LinkedList<>();
+//        nodesToVisit.add(targetNode);
+//        while(!nodesToVisit.isEmpty()) {
+//            DiagramNode currentNode = nodesToVisit.poll();
+//            if(currentNode.equals(sourceNode)) {
+//                /* Cycle detected */
+//                return false;
+//            }
+//
+//            visitedNodes.add(currentNode);
+//
+//            for(Pair<DiagramNode, DataPort> connectedNode : currentNode.dataConnectionsProperty().values()) {
+//                if(!visitedNodes.contains(connectedNode.key())) {
+//                    nodesToVisit.add(connectedNode.key());
+//                }
+//            }
+//        }
 
         /* No cycle was detected, this connection is valid */
         return true;
@@ -203,44 +191,20 @@ public final class Diagram {
         return executables;
     }
 
-    public Set<DataPortConnectionData> getAllDataPortConnections() {
-        Set<DataPortConnectionData> result = new HashSet<>();
-        AtomicInteger elementsNotAdded = new AtomicInteger();
-
-        /* Loop over all nodes in this diagram */
-        for(DiagramNode node : nodes) {
-            /* Loop over all data port connections for this node */
-            node.dataConnectionsProperty().forEach((port, other) -> {
-                boolean added = result.add(new DataPortConnectionData(node, other.key(), port, other.value()));
-                if(!added)
-                    elementsNotAdded.incrementAndGet();
-            });
-        }
-
-        /* The number of elements in the set should be equal to the number of elements skipped */
-        assert result.size() == elementsNotAdded.get();
-
-        return result;
-    }
-
-    public List<Pair<DiagramNode, DataPort>> getDataPortsWithoutConnections() {
-        List<Pair<DiagramNode, DataPort>> unconnectedPorts = new ArrayList<>();
+    public List<IDataPort<?>> getDataPortsWithoutConnections() {
+        List<IDataPort<?>> unconnectedPorts = new ArrayList<>();
 
         for(DiagramNode node : nodes) {
-            Executable exe = node.getExecutable();
-
             /* Check input ports */
-            for(DataPort inputPort : exe.getInputs()) {
-                if(!node.dataConnectionsProperty().containsKey(inputPort)) {
-                    unconnectedPorts.add(new Pair<>(node, inputPort));
-                }
+            for(InputParameter input : node.getInputs()) {
+                if(input.getFrom() == null)
+                    unconnectedPorts.add(input);
             }
 
             /* Check output ports */
-            for(DataPort outputPort : exe.getOutputs()) {
-                if(!node.dataConnectionsProperty().containsKey(outputPort)) {
-                    unconnectedPorts.add(new Pair<>(node, outputPort));
-                }
+            for(OutputReturn output : node.getOutputs()) {
+                if(output.getTo() == null)
+                    unconnectedPorts.add(output);
             }
         }
 

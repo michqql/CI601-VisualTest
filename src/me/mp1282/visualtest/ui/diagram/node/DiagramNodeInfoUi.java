@@ -5,7 +5,6 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import me.mp1282.visualtest.system.diagram.DiagramNode;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
 
 public class DiagramNodeInfoUi extends GridPane {

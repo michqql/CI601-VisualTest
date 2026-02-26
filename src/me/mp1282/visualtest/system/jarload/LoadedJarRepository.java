@@ -20,8 +20,8 @@ public class LoadedJarRepository implements IReset, IExecutableTypeHolder<Loaded
             LoadedJar jar = new LoadedJar(file);
             /* Initialize all the LoadedMethod's */
             jar.getLoadedClassMap().values().forEach(clazz ->
-                    clazz.getMethodMap().values().forEach(method ->
-                            method.init(LoadedJarRepository.this)));
+                    clazz.getMethods().forEach(method ->
+                            method.init(this)));
 
             repository.add(jar);
             return Optional.of(jar);

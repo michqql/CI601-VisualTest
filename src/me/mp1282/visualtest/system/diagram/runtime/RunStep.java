@@ -1,7 +1,7 @@
 package me.mp1282.visualtest.system.diagram.runtime;
 
 import me.mp1282.visualtest.system.diagram.Diagram;
-import me.mp1282.visualtest.system.diagram.DiagramNode;
+import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 
 import java.util.ArrayList;
 import java.util.List;

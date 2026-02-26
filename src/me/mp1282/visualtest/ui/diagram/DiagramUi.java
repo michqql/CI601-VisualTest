@@ -13,7 +13,7 @@ import javafx.scene.input.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import me.mp1282.visualtest.system.diagram.Diagram;
-import me.mp1282.visualtest.system.diagram.DiagramNode;
+import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.ui.diagram.helper.ConnectionHelper;
 import me.mp1282.visualtest.ui.diagram.helper.KeyboardHelper;
@@ -146,7 +146,7 @@ public class DiagramUi extends Pane {
         /* If the Executable that this node is wrapping has no outputs,
          * add a MenuItem to specify the execution path.
          */
-        if(ui.getNode().getExecutable().getNumberOfOutputs() == 0) {
+        if(ui.getNode().getExecutable().getNumberOfReturnValues() == 0) {
             MenuItem executionPathItem = new MenuItem("Specify 'Execution Path'");
             /* TODO: disable this menu item if it doesn't make sense as an action the user can take */
             executionPathItem.setOnAction(_ -> connectionHelper.handleExecutionPathConnecting(ui, true));
@@ -241,12 +241,12 @@ public class DiagramUi extends Pane {
             /* For each data port, check if the user is currently hovering,
              * if so set the hovered property.
              */
-            for (DataPortArea area : ui.getCachedPortAreas()) {
-                if (area.isInside(e.getX(), e.getY())) {
-                    ui.hoveredDataPortProperty().set(area);
-                    return;
-                }
-            }
+//            for (DataPortArea area : ui.getCachedPortAreas()) {
+//                if (area.isInside(e.getX(), e.getY())) {
+//                    ui.hoveredDataPortProperty().set(area);
+//                    return;
+//                }
+//            }
 
             /* No data port is being hovered if the code has reached here,
              * thus set the hovered property to null
@@ -397,22 +397,22 @@ public class DiagramUi extends Pane {
                 throw new RuntimeException("DiagramNode does not have a DiagramNodeUi when rebuilding data ports! (A)");
 
             /* Loop over each data port connection for this node */
-            node.dataConnectionsProperty().forEach((port, pair) -> {
-                final DiagramNodeUi targetNodeUi = nodeToUiMap.get(pair.key());
-                if(targetNodeUi == null)
-                    throw new RuntimeException("DiagramNode does not have a DiagramNodeUi when rebuilding data ports! (B)");
-
-                final DataPortArea sourceArea = sourceNodeUi.getAreaFromDataPort(port);
-                if(sourceArea == null)
-                    throw new RuntimeException("DiagramNodeUi does not have a DataPortArea when rebuilding data ports! (A)");
-
-                final DataPortArea targetArea = targetNodeUi.getAreaFromDataPort(pair.value());
-                if(targetArea == null)
-                    throw new RuntimeException("DiagramNodeUi does not have a DataPortArea when rebuilding data ports! (B)");
-
-                /* Create the connection UI */
-                createDataPortConnectorUi(sourceNodeUi, sourceArea, targetNodeUi, targetArea);
-            });
+//            node.dataConnectionsProperty().forEach((port, pair) -> {
+//                final DiagramNodeUi targetNodeUi = nodeToUiMap.get(pair.key());
+//                if(targetNodeUi == null)
+//                    throw new RuntimeException("DiagramNode does not have a DiagramNodeUi when rebuilding data ports! (B)");
+//
+//                final DataPortArea sourceArea = sourceNodeUi.getAreaFromDataPort(port);
+//                if(sourceArea == null)
+//                    throw new RuntimeException("DiagramNodeUi does not have a DataPortArea when rebuilding data ports! (A)");
+//
+//                final DataPortArea targetArea = targetNodeUi.getAreaFromDataPort(pair.value());
+//                if(targetArea == null)
+//                    throw new RuntimeException("DiagramNodeUi does not have a DataPortArea when rebuilding data ports! (B)");
+//
+//                /* Create the connection UI */
+//                createDataPortConnectorUi(sourceNodeUi, sourceArea, targetNodeUi, targetArea);
+//            });
         }
     }
 
@@ -429,59 +429,59 @@ public class DiagramUi extends Pane {
             if(currentNodeUi == null) /* TODO: If this is null we have a serious problem */
                 throw new RuntimeException("DiagramNode does not have a DiagramNodeUi when rebuilding execution path! (A)");
 
-            final DiagramNode before = node.executionPathNodeBeforeProperty().get();
-            if(before != null) {
-                final DiagramNodeUi beforeNodeUi = nodeToUiMap.get(before);
-                if(beforeNodeUi != null)
-                    createExecutionPathConnectorUi(beforeNodeUi, currentNodeUi);
-            }
-
-            final DiagramNode after = node.executionPathNodeAfterProperty().get();
-            if(after != null) {
-                final DiagramNodeUi afterNodeUi = nodeToUiMap.get(after);
-                if(afterNodeUi != null)
-                    createExecutionPathConnectorUi(currentNodeUi, afterNodeUi);
-            }
+//            final DiagramNode before = node.executionPathNodeBeforeProperty().get();
+//            if(before != null) {
+//                final DiagramNodeUi beforeNodeUi = nodeToUiMap.get(before);
+//                if(beforeNodeUi != null)
+//                    createExecutionPathConnectorUi(beforeNodeUi, currentNodeUi);
+//            }
+//
+//            final DiagramNode after = node.executionPathNodeAfterProperty().get();
+//            if(after != null) {
+//                final DiagramNodeUi afterNodeUi = nodeToUiMap.get(after);
+//                if(afterNodeUi != null)
+//                    createExecutionPathConnectorUi(currentNodeUi, afterNodeUi);
+//            }
         }
     }
 
     private void deleteSelected() {
         final ObservableList<ISelectableUi> selected = selectionHelper.getList();
 
-        for (ISelectableUi ui : selected) {
-            if(ui instanceof DiagramNodeUi nodeUi) {
-                DiagramNode node = nodeUi.getNode();
-
-                /* Remove the data port connections to this node
-                 * (node, port '_') -> (pair.key, pair.value)
-                 * (pair.key, pair.value) -> (node, port)
-                 *
-                 * Thus, performing pair.key remove pair.value effectively removes (node, port).
-                 *
-                 * Cannot use diagram.disconnectDataPorts here as that would cause a ConcurrentModificationException
-                 * if the number of connections is greater than 1.
-                 */
-                node.dataConnectionsProperty().forEach((_, pair) -> {
-                    pair.key().dataConnectionsProperty().remove(pair.value());
-                });
-
-                diagram.nodesProperty().remove(node);
-                /* Don't remove DiagramNodeUi from children, as updating nodeProperty triggers
-                 * removal in DiagramNodeHolderUi.
-                 */
-
-            } else if(ui instanceof DataPortConnectorLineUi lineUi) {
-                /* Calling the disconnect logic on the source port will disconnect the target port too */
-                diagram.disconnectDataPort(lineUi.getSourceNodeUi().getNode(), lineUi.getSourcePort().getDataPort());
-                getChildren().remove(ui);
-
-            } else if(ui instanceof ExecutionPathConnectorLineUi lineUi) {
-                /* Calling the disconnect logic on the source port will disconnect the target port too */
-                diagram.disconnectExecutionPath(lineUi.getSourceNodeUi().getNode());
-                getChildren().remove(ui);
-
-            }
-        }
+//        for (ISelectableUi ui : selected) {
+//            if(ui instanceof DiagramNodeUi nodeUi) {
+//                DiagramNode node = nodeUi.getNode();
+//
+//                /* Remove the data port connections to this node
+//                 * (node, port '_') -> (pair.key, pair.value)
+//                 * (pair.key, pair.value) -> (node, port)
+//                 *
+//                 * Thus, performing pair.key remove pair.value effectively removes (node, port).
+//                 *
+//                 * Cannot use diagram.disconnectDataPorts here as that would cause a ConcurrentModificationException
+//                 * if the number of connections is greater than 1.
+//                 */
+//                node.dataConnectionsProperty().forEach((_, pair) -> {
+//                    pair.key().dataConnectionsProperty().remove(pair.value());
+//                });
+//
+//                diagram.nodesProperty().remove(node);
+//                /* Don't remove DiagramNodeUi from children, as updating nodeProperty triggers
+//                 * removal in DiagramNodeHolderUi.
+//                 */
+//
+//            } else if(ui instanceof DataPortConnectorLineUi lineUi) {
+//                /* Calling the disconnect logic on the source port will disconnect the target port too */
+//                diagram.disconnectDataPort(lineUi.getSourceNodeUi().getNode(), lineUi.getSourcePort().getDataPort());
+//                getChildren().remove(ui);
+//
+//            } else if(ui instanceof ExecutionPathConnectorLineUi lineUi) {
+//                /* Calling the disconnect logic on the source port will disconnect the target port too */
+//                diagram.disconnectExecutionPath(lineUi.getSourceNodeUi().getNode());
+//                getChildren().remove(ui);
+//
+//            }
+//        }
 
         selected.clear();
         rebuildDataPortConnections();

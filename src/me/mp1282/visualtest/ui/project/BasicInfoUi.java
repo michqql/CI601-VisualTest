@@ -68,7 +68,7 @@ public class BasicInfoUi extends GridPane2dInfoUi {
                 jarCount++;
                 for (LoadedClass loadedClass : jar.getLoadedClassMap().values()) {
                     classCount++;
-                    methodCount += loadedClass.getMethodMap().size();
+                    methodCount += loadedClass.getMethods().size();
                 }
             }
 

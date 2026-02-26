@@ -1,7 +1,7 @@
 package me.mp1282.visualtest.system.persistence.handlers;
 
 import com.google.gson.*;
-import me.mp1282.visualtest.system.diagram.DiagramNode;
+import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.system.persistence.IPersistenceHandler;
 import me.mp1282.visualtest.util.GsonUtil;

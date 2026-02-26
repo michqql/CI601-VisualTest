@@ -14,19 +14,22 @@ import me.mp1282.visualtest.ui.diagram.node.skin.component.DataPortComponent;
 
 public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
 
-    private static final Color DEFAULT_COLOUR  = Color.BLACK;
-    private static final Color SELECTED_COLOUR = Color.RED;
-
-    private final Rectangle outline;
-
     public DefaultExecutableSkin(DiagramNodeUi nodeUi) {
         super(nodeUi);
 
-        VBox parent = new VBox();
-        HBox inputs = new HBox();
-        StackPane main = new StackPane();
-        HBox outputs = new HBox();
+        final VBox parent    = new VBox(); /* The parent container */
 
+        final HBox inputs    = new HBox(); /* Container for data port inputs */
+        inputs.setAlignment(Pos.CENTER);
+        inputs.setSpacing(5);
+
+        final HBox outputs   = new HBox(); /* Container for data port outputs */
+        outputs.setAlignment(Pos.CENTER);
+        outputs.setSpacing(5);
+
+        final StackPane main = new StackPane(); /* Container for main content */
+
+        /* Populate input data ports */
         for(IDataPort<?> input : nodeUi.getNode().getInputs()) {
             DataPortComponent dpc = new DataPortComponent(input);
             dpc.addEventHandler(MouseEvent.MOUSE_PRESSED, this::onDataPortClicked);
@@ -34,11 +37,7 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
             inputs.getChildren().add(dpc);
         }
 
-        this.outline = new Rectangle(/* Width => */ 110, /* Height => */ 90);
-        this.outline.setStroke(Color.BLACK);
-        this.outline.setFill(null);
-        this.outline.setStrokeWidth(5);
-
+        /* Populate output data ports */
         for(IDataPort<?> output : nodeUi.getNode().getOutputs()) {
             DataPortComponent dpc = new DataPortComponent(output);
             dpc.addEventHandler(MouseEvent.MOUSE_CLICKED, this::onDataPortClicked);
@@ -46,11 +45,14 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
             outputs.getChildren().add(dpc);
         }
 
+        /* Construct the main content */
+        final Rectangle outline = new Rectangle(/* Width => */ 110, /* Height => */ 90);
+        outline.setStroke(Color.BLACK);
+        outline.setFill(null);
+        outline.setStrokeWidth(3);
+
+        /* Construct node graph */
         main.getChildren().add(outline);
-        inputs.setAlignment(Pos.CENTER);
-        inputs.setSpacing(5);
-        outputs.setAlignment(Pos.CENTER);
-        outputs.setSpacing(5);
         parent.getChildren().addAll(inputs, main, outputs);
         getChildren().add(parent);
     }

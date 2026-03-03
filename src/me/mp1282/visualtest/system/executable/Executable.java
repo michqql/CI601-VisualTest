@@ -1,6 +1,7 @@
 package me.mp1282.visualtest.system.executable;
 
 import javafx.scene.input.DataFormat;
+import me.mp1282.visualtest.system.diagram.node.NodeData;
 import me.mp1282.visualtest.system.executable.data.ParameterType;
 import me.mp1282.visualtest.system.executable.data.ReturnType;
 
@@ -52,15 +53,15 @@ public abstract class Executable {
     /**
      * The execute function performs the runtime actions for this {@link Executable}.
      *
-     * @param inputs - A generic list of inputs.
+     * @param inputs  - A generic list of inputs.
      * @param outputs - A generic list of outputs.
-     * @param extraData - Extra state data that is passed from the DiagramNode containing this Executable
-     *                    to support the execution of the underlying code.
+     * @param data    - Extra state data that is passed from the DiagramNode containing this Executable
+     *                  to support the execution of the underlying code.
      * @throws Exception - Numerous exceptions can be thrown during the execution of the underlying function.
      */
     public abstract void execute(final Object[] inputs,
                                  final Object[] outputs,
-                                 final Map<String, Object> extraData) throws Exception;
+                                 final NodeData data) throws Exception;
 
     /**
      * Gets the name of the underlying executable.
@@ -107,6 +108,10 @@ public abstract class Executable {
         }
 
         return cachedPersistenceId;
+    }
+
+    public NodeData createNodeData() {
+        return new NodeData();
     }
 
     /**

@@ -1,13 +1,13 @@
 package me.mp1282.visualtest.system.diagram;
 
-import me.mp1282.visualtest.system.diagram.node.IDataPort;
+import me.mp1282.visualtest.system.diagram.node.NodeData;
+import me.mp1282.visualtest.system.diagram.port.IDataPort;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.system.executable.data.IDataType;
 import me.mp1282.visualtest.system.executable.data.ParameterType;
 import me.mp1282.visualtest.system.executable.data.ReturnType;
 
 import java.util.List;
-import java.util.Map;
 
 public class DiagramRefExecutable extends Executable {
 
@@ -34,7 +34,7 @@ public class DiagramRefExecutable extends Executable {
 
     @Override
     public void execute(Object[] inputs, Object[] outputs,
-                        final Map<String, Object> extraData) {
+                        final NodeData data) {
 
     }
 

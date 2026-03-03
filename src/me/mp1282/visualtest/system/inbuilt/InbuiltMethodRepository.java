@@ -2,10 +2,7 @@ package me.mp1282.visualtest.system.inbuilt;
 
 import me.mp1282.visualtest.system.IReset;
 import me.mp1282.visualtest.system.executable.IExecutableTypeHolder;
-import me.mp1282.visualtest.system.inbuilt.category.BooleanLogicInbuiltMethods;
-import me.mp1282.visualtest.system.inbuilt.category.CollectionsInbuiltMethods;
-import me.mp1282.visualtest.system.inbuilt.category.NumberInbuiltMethods;
-import me.mp1282.visualtest.system.inbuilt.category.RandomInbuiltMethods;
+import me.mp1282.visualtest.system.inbuilt.category.*;
 import me.mp1282.visualtest.system.persistence.IPersistenceHandler;
 import me.mp1282.visualtest.util.Pair;
 
@@ -20,6 +17,8 @@ public class InbuiltMethodRepository implements IReset, IExecutableTypeHolder<In
      * to the registry that will be parsed when this class is instantiated.
      */
     static {
+        CLASS_REGISTRY.add(TestInbuiltMethods.class);
+
         CLASS_REGISTRY.add(RandomInbuiltMethods.class);
         CLASS_REGISTRY.add(BooleanLogicInbuiltMethods.class);
         CLASS_REGISTRY.add(NumberInbuiltMethods.class);

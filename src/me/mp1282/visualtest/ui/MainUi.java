@@ -28,7 +28,6 @@ import java.util.Optional;
 
 public class MainUi extends VBox {
 
-    private final LoadedJarRepository jarRepository;
     private final DiagramRepository diagramRepository;
 
     /* UI elements */
@@ -37,7 +36,6 @@ public class MainUi extends VBox {
 
 
     public MainUi(Window window) {
-        this.jarRepository = VisualTestSystem.getInstance().getJarRepository();
         this.diagramRepository = VisualTestSystem.getInstance().getDiagramRepository();
 
         this.runtimeStage = new Stage();
@@ -46,24 +44,6 @@ public class MainUi extends VBox {
         runtimeStage.setScene(new Scene(new RuntimeUi()));
 
         setAlignment(Pos.TOP_CENTER);
-
-        /* MenuBar UI with key elements */
-        MainMenuBarUi menuBarUi = new MainMenuBarUi();
-
-        /* ToolBar UI with key buttons */
-        Button loadJar = new Button("Load JAR");
-//        loadJar.setOnAction(this::onClickLoadJar);
-
-        Button newDiagram = new Button("New Diagram");
-        newDiagram.setOnAction(this::onClickNewDiagram);
-
-        Button saveDiagram = new Button("Save Diagram");
-        saveDiagram.setOnAction(this::onClickSaveDiagram);
-
-        Button runDiagram = new Button("Run Diagram");
-        runDiagram.setOnAction(this::onClickRunDiagram);
-
-        ToolBar toolBar = new ToolBar(loadJar, newDiagram, saveDiagram, runDiagram);
 
         /* The sidebar split pane, containing the class hierarchy
          * above the executable list
@@ -84,40 +64,6 @@ public class MainUi extends VBox {
         VBox.setVgrow(mainContentSplitPane, Priority.ALWAYS);
         VBox.setVgrow(sidebarSplitPane, Priority.ALWAYS);
 
-        getChildren().addAll(menuBarUi, mainContentSplitPane);
-    }
-
-
-
-    private void onClickNewDiagram(ActionEvent actionEvent) {
-        diagramRepository.getDiagrams().add(new Diagram());
-    }
-
-    private void onClickSaveDiagram(ActionEvent actionEvent) {
-        if(diagramTabPane.getSelectionModel().getSelectedItem()
-                .getUserData() instanceof Diagram diagram) {
-
-//            JsonObject json = diagram.save();
-//
-//            FileChooser fileChooser = new FileChooser();
-//            fileChooser.setTitle("Save Diagram");
-//            fileChooser.getExtensionFilters().addAll(
-//                    new FileChooser.ExtensionFilter("JSON Files", "*.json"),
-//                    new FileChooser.ExtensionFilter("All Files", "*.*")
-//            );
-//
-//            final File selectedFile = fileChooser.showSaveDialog(getScene().getWindow());
-//            if(selectedFile != null) {
-//                try (FileWriter writer = new FileWriter(selectedFile)) {
-//                    gson.toJson(json, writer);
-//                } catch (IOException e) {
-//                    System.err.println("Failed to save diagram file!");
-//                }
-//            }
-        }
-    }
-
-    private void onClickRunDiagram(ActionEvent actionEvent) {
-        runtimeStage.show();
+        getChildren().addAll(new MainMenuBarUi(), mainContentSplitPane);
     }
 }

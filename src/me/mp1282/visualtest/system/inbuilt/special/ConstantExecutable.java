@@ -1,15 +1,13 @@
 package me.mp1282.visualtest.system.inbuilt.special;
 
+import me.mp1282.visualtest.system.diagram.node.NodeData;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.system.executable.data.ParameterType;
 import me.mp1282.visualtest.system.executable.data.ReturnType;
 
 import java.util.List;
-import java.util.Map;
 
 public class ConstantExecutable extends Executable {
-
-    public static String CONSTANT_KEY = "constant";
 
     @Override
     protected void setup(List<ParameterType> parameterTypes, List<ReturnType> returnTypes) {
@@ -19,9 +17,9 @@ public class ConstantExecutable extends Executable {
 
     @Override
     public void execute(Object[] inputs, Object[] outputs,
-                        final Map<String, Object> extraData) throws Exception {
-        Object constant = extraData.get(CONSTANT_KEY);
-        outputs[0] = constant;
+                        final NodeData data) throws Exception {
+        if(data instanceof ConstantData constantData)
+            outputs[0] = constantData.getConstant();
     }
 
     @Override
@@ -32,5 +30,17 @@ public class ConstantExecutable extends Executable {
     @Override
     protected String getNamespace() {
         return "";
+    }
+
+    public static class ConstantData extends NodeData {
+        private Object constant;
+
+        public Object getConstant() {
+            return constant;
+        }
+
+        public void setConstant(Object constant) {
+            this.constant = constant;
+        }
     }
 }

@@ -4,7 +4,9 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
-import me.mp1282.visualtest.system.diagram.node.IDataPort;
+import me.mp1282.visualtest.system.diagram.port.IDataPort;
+import me.mp1282.visualtest.system.event.EventBus;
+import me.mp1282.visualtest.system.event.types.DataPortClickEvent;
 
 public class DataPortComponent extends StackPane {
 
@@ -23,12 +25,17 @@ public class DataPortComponent extends StackPane {
         bg.setFill(STROKE_HIDDEN);
         bg.setStroke(STROKE_HIDDEN);
         bg.setStrokeWidth(LINE_WIDTH);
-        bg.hoverProperty().addListener((_, _, hover) -> bg.setStroke(hover ? STROKE_VISIBLE : STROKE_HIDDEN));
+        bg.setArcWidth(5);
+        bg.setArcHeight(5);
+        bg.hoverProperty().addListener((_, _, hover) ->
+                bg.setStroke(hover ? STROKE_VISIBLE : STROKE_HIDDEN));
 
         final Line fg = new Line(/* X => */ 0, /* Y => */ 0, /* End X => */ 0, /* End Y => */ SIDE_LENGTH);
         fg.setStrokeWidth(LINE_WIDTH);
         fg.setStroke(Color.RED);
         fg.setMouseTransparent(true);
+
+        setOnMouseClicked(_ -> EventBus.publish(new DataPortClickEvent(dataPort)));
 
         getChildren().addAll(bg, fg);
     }

@@ -2,8 +2,8 @@ package me.mp1282.visualtest.system.diagram.runtime;
 
 import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
-import me.mp1282.visualtest.system.diagram.node.IDataPort;
-import me.mp1282.visualtest.system.diagram.node.OutputReturn;
+import me.mp1282.visualtest.system.diagram.port.IDataPort;
+import me.mp1282.visualtest.system.diagram.port.OutputReturn;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.system.executable.data.ParameterType;
 
@@ -59,7 +59,7 @@ public class ExecuteTask {
 
         /* Execute this node */
         log.log(System.Logger.Level.INFO, "Executing: " + exe.getName());
-        exe.execute(inputs, outputs, currentNode.getExtraData());
+        exe.execute(inputs, outputs, currentNode.getData());
 
         /* Store outputs */
         for(OutputReturn outputPort : currentNode.getOutputs()) {

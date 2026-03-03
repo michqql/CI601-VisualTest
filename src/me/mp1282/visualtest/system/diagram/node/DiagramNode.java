@@ -1,6 +1,9 @@
 package me.mp1282.visualtest.system.diagram.node;
 
 import javafx.beans.property.*;
+import me.mp1282.visualtest.system.diagram.port.ExecutionPath;
+import me.mp1282.visualtest.system.diagram.port.InputParameter;
+import me.mp1282.visualtest.system.diagram.port.OutputReturn;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.system.executable.data.ParameterType;
 import me.mp1282.visualtest.system.executable.data.ReturnType;
@@ -15,8 +18,8 @@ public class DiagramNode extends Identifiable {
     private static final int COST_PER_CONNECTED_INPUT   = 2;
     private static final int COST_OF_EXECUTION_PATH     = 5;
 
-    /* The wrapped executable */
-    private final Executable executable;
+    private final Executable executable; /* The wrapped executable */
+    private final NodeData data;
     /* The data ports for this node */
     private final Collection<InputParameter> inputs;
     private final Collection<OutputReturn> outputs;
@@ -35,11 +38,10 @@ public class DiagramNode extends Identifiable {
     private final DoubleProperty width;
     private final DoubleProperty height;
 
-    private final Map<String, Object> extraData;
-
     public DiagramNode(Executable executable) {
         super();
         this.executable                  = executable;
+        this.data                        = executable.createNodeData();
         this.inputs                      = createInputs();
         this.outputs                     = createOutputs();
         this.nodeBefore                  = new ExecutionPath(this);
@@ -51,14 +53,16 @@ public class DiagramNode extends Identifiable {
         this.width                       = new SimpleDoubleProperty();
         this.height                      = new SimpleDoubleProperty();
 
-        this.extraData = new HashMap<>();
-
         /* Recalculate execution cost when connections change */
         calculateExecutionCost(); /* Calculate initial value */
     }
 
     public Executable getExecutable() {
         return executable;
+    }
+
+    public NodeData getData() {
+        return data;
     }
 
     public Collection<InputParameter> getInputs() {
@@ -95,10 +99,6 @@ public class DiagramNode extends Identifiable {
 
     public DoubleProperty heightProperty() {
         return height;
-    }
-
-    public Map<String, Object> getExtraData() {
-        return extraData;
     }
 
     /* Execution cost is calculated by these rules:

@@ -65,16 +65,29 @@ public final class Diagram {
     public void removeDiagramNode(DiagramNode node) {
         if(this.nodes.remove(node)) {
             /* Was removed from the list; remove connections */
-            for (InputParameter input : node.getInputs()) {
-                disconnectDataPort(input);
-            }
-
-            for (OutputReturn output : node.getOutputs()) {
-                disconnectDataPort(output);
-            }
-
-            disconnectExecutionPath(node);
+            disconnectNode(node);
         }
+    }
+
+    public void removeDiagramNodes(Collection<DiagramNode> nodesToRemove) {
+        this.nodes.removeAll(nodesToRemove);
+
+        /* TODO: This assumes all nodes are contained within this diagram, and disconnects their connections blindly */
+        for (DiagramNode node : nodesToRemove) {
+            disconnectNode(node);
+        }
+    }
+
+    private void disconnectNode(DiagramNode node) {
+        for (InputParameter input : node.getInputs()) {
+            disconnectDataPort(input);
+        }
+
+        for (OutputReturn output : node.getOutputs()) {
+            disconnectDataPort(output);
+        }
+
+        disconnectExecutionPath(node);
     }
 
     /* Create a flow connection between two flow ports */

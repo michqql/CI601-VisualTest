@@ -4,12 +4,15 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import me.mp1282.visualtest.system.diagram.port.IDataPort;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.diagram.node.skin.component.DataPortComponent;
+import me.mp1282.visualtest.ui.event.DataPortMouseEvent;
+import me.mp1282.visualtest.ui.event.ExecutableBodyMouseEvent;
 
 public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
 
@@ -45,6 +48,19 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
         final Border selectedBorder = new Border(new BorderStroke(Color.RED, BorderStrokeStyle.SOLID, new CornerRadii(5), new BorderWidths(3)));
         main.borderProperty().bind(nodeUi.selectedProperty().map(sel -> sel ? selectedBorder : normalBorder));
         createMainBody(main);
+
+        /* Capture all mouse events on this pane, and fire them on the DiagramNodeUi */
+        root.addEventHandler(MouseEvent.ANY, event -> {
+            final DiagramNodeUi ui = getSkinnable();
+            /* Fire generic mouse event */
+            ui.fireEvent(new ExecutableBodyMouseEvent(ExecutableBodyMouseEvent.ANY_MOUSE, ui, event));
+
+            /* If was mouse click event, fire mouse click specific event */
+            if(event.getEventType() == MouseEvent.MOUSE_CLICKED)
+                ui.fireEvent(new ExecutableBodyMouseEvent(ExecutableBodyMouseEvent.CLICK, ui, event));
+            else if(event.getEventType() == MouseEvent.MOUSE_PRESSED)
+                ui.fireEvent(new ExecutableBodyMouseEvent(ExecutableBodyMouseEvent.PRESSED, ui, event));
+        });
 
         root.getChildren().addAll(inputs, main, outputs);
         return root;

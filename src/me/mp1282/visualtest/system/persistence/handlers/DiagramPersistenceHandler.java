@@ -23,7 +23,7 @@ public class DiagramPersistenceHandler implements IPersistenceHandler<Diagram> {
 
         final JsonArray nodeArray = root.getAsJsonArray(NODES_KEY);
         for(JsonElement nodeElement : nodeArray) {
-            diagram.nodesProperty().add(ctx.deserialize(nodeElement, DiagramNode.class));
+            diagram.addDiagramNode(ctx.deserialize(nodeElement, DiagramNode.class));
         }
 
 //        final JsonArray connectionArray = root.getAsJsonArray(CONNECTIONS_KEY);

@@ -75,6 +75,10 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
     }
 
     public void setDataPortArea(IDataPort<?> dataPort, Bounds sceneBounds) {
+        /* If this DiagramNodeUi does not have a parent - ignore this call */
+        if(getParent() == null)
+            return;
+
         /* Convert bounds from scene to parent */
         Bounds parentBounds = getParent().sceneToLocal(sceneBounds);
         dataPortToAreaMap.get(dataPort).rawBoundsProperty().set(parentBounds);

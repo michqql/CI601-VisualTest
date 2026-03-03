@@ -28,6 +28,10 @@ public class DataPortComponent extends StackPane {
         this.skinParent = skinParent;
         this.dataPort = dataPort;
 
+        /* The background rectangle
+         * This isn't visible unless being hovered over, but adds width to the data port component
+         * even when not visible. This spaces the data ports out more.
+         */
         final Rectangle bg = new Rectangle(SIDE_LENGTH, SIDE_LENGTH);
         bg.setFill(STROKE_HIDDEN);
         bg.setStroke(STROKE_HIDDEN);
@@ -37,12 +41,13 @@ public class DataPortComponent extends StackPane {
         bg.hoverProperty().addListener((_, _, hover) ->
                 bg.setStroke(hover ? STROKE_VISIBLE : STROKE_HIDDEN));
 
+        /* The foreground line that is representing the data port itself */
         final Line fg = new Line(/* X => */ 0, /* Y => */ 0, /* End X => */ 0, /* End Y => */ SIDE_LENGTH);
         fg.setStrokeWidth(LINE_WIDTH);
         fg.setStroke(Color.RED);
         fg.setMouseTransparent(true);
 
-        /* Event handlers */
+        /* Capture all mouse events on this pane, and fire them on the DiagramNodeUi */
         addEventHandler(MouseEvent.ANY, event -> {
             final DiagramNodeUi ui = skinParent.getSkinnable();
             /* Fire generic mouse event */

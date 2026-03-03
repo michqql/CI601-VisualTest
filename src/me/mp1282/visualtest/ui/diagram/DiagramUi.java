@@ -2,9 +2,7 @@ package me.mp1282.visualtest.ui.diagram;
 
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.ContextMenu;
@@ -14,8 +12,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
-import me.mp1282.visualtest.system.diagram.port.InputParameter;
-import me.mp1282.visualtest.system.diagram.port.OutputReturn;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.ui.diagram.helper.ConnectionHelper;
 import me.mp1282.visualtest.ui.diagram.helper.KeyboardHelper;
@@ -25,6 +21,7 @@ import me.mp1282.visualtest.ui.diagram.node.DiagramNodeInfoUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.diagram.port.*;
 import me.mp1282.visualtest.ui.event.DataPortMouseEvent;
+import me.mp1282.visualtest.ui.event.ExecutableBodyMouseEvent;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
 import me.mp1282.visualtest.util.*;
 
@@ -37,26 +34,21 @@ public class DiagramUi extends Pane {
 
     private final Diagram diagram;
 
+    private final DoubleProperty translateX;
+    private final DoubleProperty translateY;
+
+    /* UI elements that aren't nodes and connected lines*/
+    private final Canvas gridCanvas;
     /* Child UI element variables (nodes & connectors) */
     private final DiagramNodeHolderUi nodeHolderUi;
     private final ConnectorHolderUi connectorHolderUi;
-    private final Set<ExecutionPathConnectorLineUi> executionPathConnectors;
-
-    private final DoubleProperty translateX;
-    private final DoubleProperty translateY;
 
     /* Helpers */
     private final SelectionHelper selectionHelper;
     private final ConnectionHelper connectionHelper;
 
-    /* UI elements that aren't nodes and connected lines*/
-    private final Canvas gridCanvas;
-
     public DiagramUi(final Diagram diagram) {
         this.diagram = diagram;
-
-        /* Main UI elements */
-        this.executionPathConnectors = new HashSet<>();
 
         /* Diagram state */
         this.translateX = new SimpleDoubleProperty();
@@ -130,18 +122,16 @@ public class DiagramUi extends Pane {
     }
 
     private void onDiagramNodeUiAdd(DiagramNodeUi ui) {
-        /* Add event listeners to the component.
-         *
-         * Can't use mouseClicked for this component because it doesn't
-         * get called for some reason, but mousePressed does.
-         */
-//        ui.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMousePressedForNode);
-//        ui.addEventHandler(MouseEvent.MOUSE_MOVED,   this::handleMouseMoveForNode);
-//        ui.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleMouseDraggedForNode);
+        /* Add event listeners to the component. */
+        ui.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleMouseDraggedForNode);
 
-        /* Event handlers: */
         /* When a data port is clicked, call into the connection helper to handle connecting data ports */
         ui.addEventHandler(DataPortMouseEvent.CLICK, connectionHelper::onDataPortComponentClickEvent);
+        /* Must use PRESSED over CLICK because:
+         * When CLICK => Primary Mouse Button Down = false
+         * When PRESS => Primary Mouse Button Down = true
+         */
+        ui.addEventHandler(ExecutableBodyMouseEvent.PRESSED, this::handleMousePressedForNode);
 
         /* Don't need to bind or set layoutX/Y here as the ExecutableBackedUi
          * class already binds these properties to the DiagramNode properties.
@@ -217,49 +207,23 @@ public class DiagramUi extends Pane {
     }
 
     /* Handles the user clicking on a component */
-    private void handleMousePressedForNode(MouseEvent e) {
-        MouseDelta.updatePosition(e);
+    private void handleMousePressedForNode(ExecutableBodyMouseEvent exeEvent) {
+        final MouseEvent wrappedMouseEvent = exeEvent.getWrappedMouseEvent();
+        MouseDelta.updatePosition(wrappedMouseEvent);
 
         /* Checks if a diagram node was clicked */
-        if(e.getSource() instanceof DiagramNodeUi ui) {
-//            /* Try to handle connecting data ports - ONLY if the primary mouse button was pressed */
-//            if(e.isPrimaryButtonDown() && connectionHelper.handleDataPortConnecting(ui)) {
-//                e.consume();
-//                return;
-//            }
+        if(exeEvent.getSource() instanceof DiagramNodeUi ui) {
+            /* See if the execution path can be connected - ONLY if the primary mouse button was pressed */
+            if(wrappedMouseEvent.isPrimaryButtonDown() && connectionHelper.handleExecutionPathConnecting(ui, false)) {
+                exeEvent.consume();
+                return;
+            }
 
-//            /* Next, see if the execution path can be connected - ONLY if the primary mouse button was pressed */
-//            if(e.isPrimaryButtonDown() && connectionHelper.handleExecutionPathConnecting(ui, false)) {
-//                e.consume();
-//                return;
-//            }
-
-//            /* Perform last:
-//             * Try to handle selecting a UI element - ONLY if the primary mouse button was pressed
-//             */
-//            if(e.isPrimaryButtonDown())
-//                selectionHelper.handleSelection(ui, e.isShiftDown());
-        }
-    }
-
-    private void handleMouseMoveForNode(MouseEvent e) {
-        MouseDelta.updatePosition(e);
-
-        if(e.getSource() instanceof DiagramNodeUi ui) {
-            /* For each data port, check if the user is currently hovering,
-             * if so set the hovered property.
+            /* Perform last:
+             * Try to handle selecting a UI element - ONLY if the primary mouse button was pressed
              */
-//            for (DataPortArea area : ui.getCachedPortAreas()) {
-//                if (area.isInside(e.getX(), e.getY())) {
-//                    ui.hoveredDataPortProperty().set(area);
-//                    return;
-//                }
-//            }
-
-            /* No data port is being hovered if the code has reached here,
-             * thus set the hovered property to null
-             */
-//            ui.hoveredDataPortProperty().set(null);
+            if(wrappedMouseEvent.isPrimaryButtonDown())
+                selectionHelper.handleSelection(ui, wrappedMouseEvent.isShiftDown());
         }
     }
 
@@ -268,20 +232,20 @@ public class DiagramUi extends Pane {
             /* Only allow translation if the primary mouse button is down and
              * the user is not hovering over a data port
              */
-//            if(e.isPrimaryButtonDown() && ui.hoveredDataPortProperty().get() == null) {
-//                final double deltaX = e.getSceneX() - MouseDelta.lastSceneMouseX.get();
-//                final double deltaY = e.getSceneY() - MouseDelta.lastSceneMouseY.get();
-//
-//                MouseDelta.updatePosition(e);
-//
-//                ui.layoutXProperty().set(ui.layoutXProperty().get() + deltaX);
-//                ui.layoutYProperty().set(ui.layoutYProperty().get() + deltaY);
-//
-//                /* Redraw the connecting line in case the UI node dragged was the one being connected */
-//                connectionHelper.redrawConnectingLine();
-//
-//                e.consume();
-//            }
+            if(e.isPrimaryButtonDown() && ui.hoveredDataPortProperty().get() == null) {
+                final double deltaX = e.getSceneX() - MouseDelta.lastSceneMouseX.get();
+                final double deltaY = e.getSceneY() - MouseDelta.lastSceneMouseY.get();
+
+                MouseDelta.updatePosition(e);
+
+                ui.layoutXProperty().set(ui.layoutXProperty().get() + deltaX);
+                ui.layoutYProperty().set(ui.layoutYProperty().get() + deltaY);
+
+                /* Redraw the connecting line in case the UI node dragged was the one being connected */
+                connectionHelper.redrawConnectingLine();
+
+                e.consume();
+            }
         }
     }
 
@@ -316,7 +280,7 @@ public class DiagramUi extends Pane {
             if(DragContext.getObject() instanceof Executable exe) {
                 try {
                     final DiagramNode node = new DiagramNode(exe);
-                    diagram.nodesProperty().add(node);
+                    diagram.addDiagramNode(node);
                     node.xProperty().set(e.getX());
                     node.yProperty().set(e.getY());
                 } catch(Exception ex) {
@@ -335,44 +299,33 @@ public class DiagramUi extends Pane {
         GraphicsContext gc = gridCanvas.getGraphicsContext2D();
         gc.clearRect(0, 0, getWidth(), getHeight());
 
-        double spacing = 20; // grid spacing in pixels
+        double spacingPx = 20; /* grid spacing in pixels */
         gc.setStroke(Color.LIGHTGRAY);
         gc.setLineWidth(0.5);
 
-        double startX = translateX.get() % spacing;
-        double startY = translateY.get() % spacing;
+        double startX = translateX.get() % spacingPx;
+        double startY = translateY.get() % spacingPx;
 
-        // vertical lines
-        for (double x = startX; x < getWidth(); x += spacing) {
+        /* Vertical lines */
+        for (double x = startX; x < getWidth(); x += spacingPx) {
             gc.strokeLine(x, 0, x, getHeight());
         }
-        // horizontal lines
-        for (double y = startY; y < getHeight(); y += spacing) {
+        /* Horizontal lines */
+        for (double y = startY; y < getHeight(); y += spacingPx) {
             gc.strokeLine(0, y, getWidth(), y);
         }
     }
 
     private void deleteSelected() {
         final ObservableList<ISelectableUi> selected = selectionHelper.getList();
+        /* Rather than removing nodes from the diagram one by one, add them to this list and
+         * remove them all at once. This results in 1 change fire, rather than several.
+         */
+        final Collection<DiagramNode> nodesToRemove = new ArrayList<>();
 
-        for (ISelectableUi ui : selected) {
+        for (final ISelectableUi ui : selected) {
             if(ui instanceof DiagramNodeUi nodeUi) {
-                DiagramNode node = nodeUi.getNode();
-
-                /* Remove the data port connections to this node
-                 * (node, port '_') -> (pair.key, pair.value)
-                 * (pair.key, pair.value) -> (node, port)
-                 *
-                 * Thus, performing pair.key remove pair.value effectively removes (node, port).
-                 *
-                 * Cannot use diagram.disconnectDataPorts here as that would cause a ConcurrentModificationException
-                 * if the number of connections is greater than 1.
-                 */
-
-                diagram.nodesProperty().remove(node);
-                /* Don't remove DiagramNodeUi from children, as updating nodeProperty triggers
-                 * removal in DiagramNodeHolderUi.
-                 */
+                nodesToRemove.add(nodeUi.getNode());
 
             } else if(ui instanceof DataPortConnectorLineUi lineUi) {
                 /* Calling the disconnect logic on the source port will disconnect the target port too */
@@ -386,5 +339,11 @@ public class DiagramUi extends Pane {
         }
 
         selected.clear();
+
+        /* Updates the node model, which in turn will update the DiagramNodeHolderUi */
+        diagram.removeDiagramNodes(nodesToRemove);
+
+        /* Call into the ConnectorHolderUi to rebuild the connections */
+        connectorHolderUi.rebuildConnectors();
     }
 }

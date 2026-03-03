@@ -32,4 +32,14 @@ public class InputParameter implements IDataPort<ParameterType> {
     public void setFrom(OutputReturn from) {
         this.from = from;
     }
+
+    @Override
+    public IDataPort<?> getOther() {
+        return getFrom();
+    }
+
+    @Override
+    public void disconnect() {
+        setFrom(null);
+    }
 }

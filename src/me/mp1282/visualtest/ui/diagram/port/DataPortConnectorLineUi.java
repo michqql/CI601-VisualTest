@@ -22,21 +22,12 @@ public class DataPortConnectorLineUi extends Line implements IConnectorUi, ISele
     private static final int DEFAULT_WIDTH = 2;
     private static final int HOVERED_WIDTH = 7;
 
-    private final DiagramNodeUi outputUi;
-    private final DiagramNodeUi inputUi;
-    private final OutputReturn   output;
-    private final InputParameter input;
-
+    private final OutputReturn output;
     private final BooleanProperty selected;
 
-    public DataPortConnectorLineUi(DiagramNodeUi outputUi, OutputReturn   output,
-                                   DiagramNodeUi inputUi,  InputParameter input) {
-
-        this.outputUi = outputUi;
-        this.inputUi  = inputUi;
-        this.output   = output;
-        this.input    = input;
-
+    public DataPortConnectorLineUi(final DiagramNodeUi outputUi, final OutputReturn   output,
+                                   final DiagramNodeUi inputUi,  final InputParameter input) {
+        this.output = output;
         this.selected = new SimpleBooleanProperty();
 
         setStroke(DEFAULT_COLOUR);
@@ -54,61 +45,26 @@ public class DataPortConnectorLineUi extends Line implements IConnectorUi, ISele
         endXProperty  ().bind(inputBounds .centerXProperty ());
         endYProperty  ().bind(inputBounds .centerYProperty());
 
-//        sourceNodeUi.getDataPortAreaProperty(sourcePort).addListener((_, _, bounds) -> {
-//            startXProperty().set(bounds.getCenterX());
-//            startYProperty().set(bounds.getCenterY());
-//        });
-//        targetNodeUi.getDataPortAreaProperty(targetPort).addListener((_, _, bounds) -> {
-//            endXProperty().set(bounds.getCenterX());
-//            endYProperty().set(bounds.getCenterY());
-//        });
-
         hoverProperty().addListener((_, _, hovered) -> {
             setStrokeWidth(hovered ? HOVERED_WIDTH : DEFAULT_WIDTH);
 
-//            outputUi.hoveredDataPortProperty().set(hovered ? sourcePort : null);
-//            targetNodeUi.hoveredDataPortProperty().set(hovered ? targetPort : null);
+            /* When hovering over this line, inform the UI elements that
+             * the data port is also being hovered, to give a nice
+             * visual indication of which data ports this line is connecting
+             */
+            outputUi.hoveredDataPortProperty().set(hovered ? output : null);
+            inputUi .hoveredDataPortProperty().set(hovered ? input  : null);
         });
 
         selected.addListener((_, _, selected) -> setStroke(selected ? SELECTED_COLOUR : DEFAULT_COLOUR));
     }
 
-    public DiagramNodeUi getOutputUi() {
-        return outputUi;
-    }
-
-    public DiagramNodeUi getInputUi() {
-        return inputUi;
-    }
-
-    public IDataPort<ReturnType> getOutputPort() {
+    public OutputReturn getOutput() {
         return output;
-    }
-
-    public IDataPort<ParameterType> getInputPort() {
-        return input;
     }
 
     @Override
     public BooleanProperty selectedProperty() {
         return selected;
-    }
-
-//    public boolean equals(DiagramNodeUi nodeA, DataPortArea areaA,
-//                          DiagramNodeUi nodeB, DataPortArea areaB) {
-//        boolean nodesEqual =
-//                (outputUi.equals(nodeA) && inputUi.equals(nodeB)) ||
-//                (outputUi.equals(nodeB) && inputUi.equals(nodeA));
-//
-//        boolean portsEqual =
-//                (sourcePort.equals(areaA) && targetPort.equals(areaB)) ||
-//                (sourcePort.equals(areaB) && targetPort.equals(areaA));
-//
-//        return nodesEqual && portsEqual;
-//    }
-
-    @Override
-    public int getZOrder() {
-        return 1;
     }
 }

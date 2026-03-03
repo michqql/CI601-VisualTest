@@ -10,8 +10,6 @@ import me.mp1282.visualtest.system.diagram.port.InputParameter;
 import me.mp1282.visualtest.system.diagram.port.OutputReturn;
 import me.mp1282.visualtest.ui.diagram.IDiagramElement;
 import me.mp1282.visualtest.ui.diagram.node.skin.SkinFactory;
-import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
-import me.mp1282.visualtest.ui.event.DataPortMouseEvent;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
 import me.mp1282.visualtest.util.ObservableBounds;
 
@@ -31,6 +29,7 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
     protected final BooleanProperty              selected;
     protected final DoubleProperty               width;
     protected final DoubleProperty               height;
+    protected final ObjectProperty<IDataPort<?>> hoveredDataPort;
 
     protected final Map<IDataPort<?>, ObservableBounds> dataPortToAreaMap;
 
@@ -39,6 +38,7 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
         this.selected            = new SimpleBooleanProperty();
         this.width               = new SimpleDoubleProperty();
         this.height              = new SimpleDoubleProperty();
+        this.hoveredDataPort     = new SimpleObjectProperty<>();
         this.dataPortToAreaMap   = createDataPortToAreaMap(); /* Creates an unmodifiable map that is fully populated */
 
         /* Bind the translation and dimension properties of this UI component
@@ -54,17 +54,6 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
         /* TODO: Find a way to flip this expression because this will overwrite the node's properties */
         node.widthProperty().bind(widthProperty());   /* node.width  = this.width  */
         node.heightProperty().bind(heightProperty()); /* node.height = this.height */
-
-//        /* Tell the UI to redraw when:
-//         * - the hovered data port changes
-//         * - the UI is hovered
-//         * - the UI is selected
-//         * - the execution cost changes
-//         */
-//        hoveredDataPort             .addListener((_, _, _) -> requestRedraw());
-//        hoverProperty()             .addListener((_, _, _) -> requestRedraw());
-//        selected                    .addListener((_, _, _) -> requestRedraw());
-//        node.executionCostProperty().addListener((_, _, _) -> requestRedraw());
     }
 
     @Override
@@ -81,9 +70,8 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
         return selected;
     }
 
-    @Override
-    public int getZOrder() {
-        return 0;
+    public ObjectProperty<IDataPort<?>> hoveredDataPortProperty() {
+        return hoveredDataPort;
     }
 
     public void setDataPortArea(IDataPort<?> dataPort, Bounds sceneBounds) {

@@ -68,13 +68,6 @@ public class ExecutionPathConnectorLineUi extends ArrowLineUi implements IConnec
         return selected;
     }
 
-    public boolean equals(DiagramNodeUi nodeA, DiagramNodeUi nodeB) {
-        boolean nodesEqual =
-                (sourceNodeUi.equals(nodeA) && targetNodeUi.equals(nodeB)) ||
-                        (sourceNodeUi.equals(nodeB) && targetNodeUi.equals(nodeA));
-        return nodesEqual;
-    }
-
     private void recalculateStartAndEndPositions() {
         setStartX(sourceNodeUi.getNode().xProperty().get() + sourceNodeUi.getNode().widthProperty ().get() / 2D);
         setStartY(sourceNodeUi.getNode().yProperty().get() + sourceNodeUi.getNode().heightProperty().get() / 2D);
@@ -113,10 +106,5 @@ public class ExecutionPathConnectorLineUi extends ArrowLineUi implements IConnec
 
     public void setMouseClickConsumer(Consumer<MouseEvent> mouseClickConsumer) {
         this.mouseClickConsumer = mouseClickConsumer;
-    }
-
-    @Override
-    public int getZOrder() {
-        return 2;
     }
 }

@@ -6,9 +6,4 @@ package me.mp1282.visualtest.ui.diagram;
  * - Z-Ordering
  */
 public interface IDiagramElement {
-    /**
-     * Gets the requested Z-Order of this element. Lower is better.
-     * @return The Z-Order index of this UI element.
-     */
-    int getZOrder();
 }

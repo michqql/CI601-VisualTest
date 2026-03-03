@@ -11,6 +11,7 @@ import me.mp1282.visualtest.system.diagram.port.InputParameter;
 import me.mp1282.visualtest.system.diagram.port.OutputReturn;
 import me.mp1282.visualtest.ui.diagram.DiagramUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
+import me.mp1282.visualtest.ui.diagram.port.ConnectorHolderUi;
 import me.mp1282.visualtest.ui.event.DataPortMouseEvent;
 import me.mp1282.visualtest.ui.other.ArrowLineUi;
 import me.mp1282.visualtest.util.MouseDelta;
@@ -22,6 +23,7 @@ public class ConnectionHelper {
     private static final Color EXECUTION_PATH_LINE_COLOUR = Color.GREEN;
 
     private final DiagramUi diagramUi;
+    private final ConnectorHolderUi connectorHolderUi;
     private final Line dataPortConnectionLine;
     private final ArrowLineUi executionPathConnectionLine;
 
@@ -29,12 +31,13 @@ public class ConnectionHelper {
     private final ObjectProperty<IDataPort<?>> dataPortSource;
     private final ObjectProperty<DiagramNodeUi> executionPathSourceNode;
 
-    public ConnectionHelper(DiagramUi diagramUi) {
-        this.diagramUi               = diagramUi;
-        this.dataPortConnectionLine = new Line();
+    public ConnectionHelper(DiagramUi diagramUi, ConnectorHolderUi connectorHolderUi) {
+        this.diagramUi                   = diagramUi;
+        this.connectorHolderUi           = connectorHolderUi;
+        this.dataPortConnectionLine      = new Line();
         this.executionPathConnectionLine = new ArrowLineUi();
-        this.dataPortSource          = new SimpleObjectProperty<>();
-        this.executionPathSourceNode = new SimpleObjectProperty<>();
+        this.dataPortSource              = new SimpleObjectProperty<>();
+        this.executionPathSourceNode     = new SimpleObjectProperty<>();
 
         dataPortConnectionLine.setVisible(false);
         dataPortConnectionLine.setStroke(DATA_PORT_LINE_COLOUR);
@@ -95,7 +98,7 @@ public class ConnectionHelper {
             }
 
             if (connected) {
-                diagramUi.rebuildDataPortConnections();
+                connectorHolderUi.rebuildConnectors();
 
                 /* Set source variables back to null as they are no longer needed */
                 dataPortSource.set(null);
@@ -124,10 +127,6 @@ public class ConnectionHelper {
         if(!initial && executionPathSourceNode.get() == null)
             return false;
 
-//        /* Ensure a data port is NOT being hovered */
-//        if(nodeUi.hoveredDataPortProperty().get() != null)
-//            return false;
-
         /* If the source node for the execution path is currently null, set it.
          * Otherwise, create the execution path connection between the two nodes.
          */
@@ -140,7 +139,7 @@ public class ConnectionHelper {
             boolean connected = diagramUi.getDiagram().connectExecutionPath(source, target);
 
             if(connected) {
-                diagramUi.rebuildExecutionPathConnections();
+                connectorHolderUi.rebuildConnectors();
 
                 /* Set source variables back to null as they are no longer needed */
                 executionPathSourceNode.set(null);

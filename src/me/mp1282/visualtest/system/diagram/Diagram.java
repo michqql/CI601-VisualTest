@@ -3,15 +3,11 @@ package me.mp1282.visualtest.system.diagram;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.diagram.port.IDataPort;
 import me.mp1282.visualtest.system.diagram.port.InputParameter;
 import me.mp1282.visualtest.system.diagram.port.OutputReturn;
-import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.system.executable.data.IDataType;
-import me.mp1282.visualtest.util.DiagramZoomLevel;
-import me.mp1282.visualtest.util.PropertyHelper;
 
 import java.util.*;
 
@@ -20,21 +16,19 @@ public final class Diagram {
     private final BooleanProperty unsaved;
 
     /* Basic information */
-    private final ObservableList<DiagramNode> nodes;
+    private final ReadOnlyListWrapper<DiagramNode> nodes;
     private final StringProperty name;
 
     /* Position data */
     private final DoubleProperty translateX;
     private final DoubleProperty translateY;
-    private final ObjectProperty<DiagramZoomLevel> zoomLevel;
 
     public Diagram() {
         this.unsaved       = new SimpleBooleanProperty();
-        this.nodes         = FXCollections.observableArrayList();
+        this.nodes         = new ReadOnlyListWrapper<>(FXCollections.observableArrayList());
         this.name          = new SimpleStringProperty("Diagram-" + UUID.randomUUID());
         this.translateX    = new SimpleDoubleProperty();
         this.translateY    = new SimpleDoubleProperty();
-        this.zoomLevel     = new SimpleObjectProperty<>(DiagramZoomLevel.DEFAULT);
 
         /* When a property value changes, mark the diagram as unsaved */
         nodes     .addListener((InvalidationListener) _ -> unsaved.set(true));
@@ -47,8 +41,8 @@ public final class Diagram {
         return unsaved;
     }
 
-    public ObservableList<DiagramNode> nodesProperty() {
-        return nodes;
+    public ReadOnlyListProperty<DiagramNode> nodesProperty() {
+        return nodes.getReadOnlyProperty();
     }
 
     public StringProperty nameProperty() {
@@ -63,31 +57,46 @@ public final class Diagram {
         return translateY;
     }
 
-    public ObjectProperty<DiagramZoomLevel> zoomLevelProperty() {
-        return zoomLevel;
+    /* Add and remove diagram nodes */
+    public void addDiagramNode(DiagramNode node) {
+        this.nodes.add(node);
+    }
+
+    public void removeDiagramNode(DiagramNode node) {
+        if(this.nodes.remove(node)) {
+            /* Was removed from the list; remove connections */
+            for (InputParameter input : node.getInputs()) {
+                disconnectDataPort(input);
+            }
+
+            for (OutputReturn output : node.getOutputs()) {
+                disconnectDataPort(output);
+            }
+
+            disconnectExecutionPath(node);
+        }
     }
 
     /* Create a flow connection between two flow ports */
     public boolean connectExecutionPath(DiagramNode source, DiagramNode target) {
 
-//        if(canConnectExecutionPath(source, target) && canConnectDataPorts(source, target)) {
-//            source.executionPathNodeAfterProperty().set(target);
-//            target.executionPathNodeBeforeProperty().set(source);
-//            return true;
-//        }
+        if(canConnectExecutionPath(source, target) && canConnectDataPorts(source, target)) {
+            source.getNodeAfter().setOther(target);
+            target.getNodeBefore().setOther(source);
+            return true;
+        }
         return false;
     }
 
     public void disconnectExecutionPath(DiagramNode node) {
-//        final DiagramNode before = node.executionPathNodeBeforeProperty().get();
-//        final DiagramNode after  = node.executionPathNodeAfterProperty().get();
-//
-//        if(before != null) before.executionPathNodeAfterProperty().set(null);
-//        if(after  != null) after .executionPathNodeBeforeProperty().set(null);
-//
-//        /* Set the before and after for the node passed to this function to null */
-//        node.executionPathNodeBeforeProperty().set(null);
-//        node.executionPathNodeAfterProperty().set(null);
+        if(node.getNodeBefore().getOther() != null)
+            node.getNodeBefore().getOther().getNodeAfter().setOther(null);
+
+        if(node.getNodeAfter().getOther() != null)
+            node.getNodeAfter().getOther().getNodeBefore().setOther(null);
+
+        node.getNodeBefore().setOther(null);
+        node.getNodeAfter().setOther(null);
     }
 
     /* Create a connection between two data ports */
@@ -103,9 +112,9 @@ public final class Diagram {
 
     /* Removes a connection between two data ports provided one of them */
     public void disconnectDataPort(IDataPort<? extends IDataType> dataPort) {
-//        Pair<DiagramNode, DataPort> pair = source.dataConnectionsProperty().remove(sourcePort);
-//        if(pair != null)
-//            pair.key().dataConnectionsProperty().remove(pair.value());
+        if(dataPort.getOther() != null)
+            dataPort.getOther().disconnect();
+        dataPort.disconnect();
     }
 
     /* Check if two flow ports can be connected together */
@@ -168,24 +177,6 @@ public final class Diagram {
 
         /* No cycle was detected, this connection is valid */
         return true;
-    }
-
-    public DiagramNode getNodeByUniqueId(UUID uuid) {
-        for(DiagramNode node : nodes) {
-            if(node.getUniqueId().equals(uuid))
-                return node;
-        }
-
-        return null;
-    }
-
-    public Set<Executable> getExecutablesWithinDiagram() {
-        /* Turn the list of nodes into a set of executables */
-        Set<Executable> executables = new HashSet<>();
-        for (DiagramNode node : nodes)
-            executables.add(node.getExecutable());
-
-        return executables;
     }
 
     public List<IDataPort<?>> getDataPortsWithoutConnections() {

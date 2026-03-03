@@ -32,4 +32,14 @@ public class OutputReturn implements IDataPort<ReturnType> {
     public void setTo(InputParameter to) {
         this.to = to;
     }
+
+    @Override
+    public IDataPort<?> getOther() {
+        return getTo();
+    }
+
+    @Override
+    public void disconnect() {
+        setTo(null);
+    }
 }

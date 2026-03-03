@@ -1,14 +1,23 @@
 package me.mp1282.visualtest.ui.diagram.node;
 
 import javafx.beans.property.*;
+import javafx.geometry.Bounds;
 import javafx.scene.control.Control;
 import javafx.scene.control.Skin;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
+import me.mp1282.visualtest.system.diagram.port.IDataPort;
+import me.mp1282.visualtest.system.diagram.port.InputParameter;
+import me.mp1282.visualtest.system.diagram.port.OutputReturn;
 import me.mp1282.visualtest.ui.diagram.IDiagramElement;
-import me.mp1282.visualtest.ui.diagram.node.skin.DefaultExecutableSkin;
 import me.mp1282.visualtest.ui.diagram.node.skin.SkinFactory;
 import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
+import me.mp1282.visualtest.ui.event.DataPortMouseEvent;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
+import me.mp1282.visualtest.util.ObservableBounds;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * An ExecutableBackedUi has a DiagramNode as a model.
@@ -16,19 +25,21 @@ import me.mp1282.visualtest.ui.other.ISelectableUi;
  */
 public class DiagramNodeUi extends Control implements IDiagramElement, ISelectableUi {
 
-    private final DiagramNode node;
+    protected final DiagramNode node;
+
     /* Properties */
-    protected final ObjectProperty<DataPortArea> hoveredDataPort;
     protected final BooleanProperty              selected;
     protected final DoubleProperty               width;
     protected final DoubleProperty               height;
 
+    protected final Map<IDataPort<?>, ObservableBounds> dataPortToAreaMap;
+
     public DiagramNodeUi(final DiagramNode node) {
-        this.node            = node;
-        this.hoveredDataPort = new SimpleObjectProperty<>();
-        this.selected        = new SimpleBooleanProperty();
-        this.width           = new SimpleDoubleProperty();
-        this.height          = new SimpleDoubleProperty();
+        this.node                = node;
+        this.selected            = new SimpleBooleanProperty();
+        this.width               = new SimpleDoubleProperty();
+        this.height              = new SimpleDoubleProperty();
+        this.dataPortToAreaMap   = createDataPortToAreaMap(); /* Creates an unmodifiable map that is fully populated */
 
         /* Bind the translation and dimension properties of this UI component
          * to the model (DiagramNode) so that changes are reflected.
@@ -54,10 +65,6 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
 //        hoverProperty()             .addListener((_, _, _) -> requestRedraw());
 //        selected                    .addListener((_, _, _) -> requestRedraw());
 //        node.executionCostProperty().addListener((_, _, _) -> requestRedraw());
-
-        /* Set a default dimension of 150x150 */
-        setWidth(110);
-        setHeight(110);
     }
 
     @Override
@@ -67,10 +74,6 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
 
     public DiagramNode getNode() {
         return node;
-    }
-
-    public ObjectProperty<DataPortArea> hoveredDataPortProperty() {
-        return hoveredDataPort;
     }
 
     @Override
@@ -83,11 +86,27 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
         return 0;
     }
 
-    public void setWidth(double width) {
-        super.setWidth(width);
+    public void setDataPortArea(IDataPort<?> dataPort, Bounds sceneBounds) {
+        /* Convert bounds from scene to parent */
+        Bounds parentBounds = getParent().sceneToLocal(sceneBounds);
+        dataPortToAreaMap.get(dataPort).rawBoundsProperty().set(parentBounds);
     }
 
-    public void setHeight(double height) {
-        super.setHeight(height);
+    public ObservableBounds getDataPortAreaProperty(IDataPort<?> dataPort) {
+        return dataPortToAreaMap.get(dataPort);
+    }
+
+    private Map<IDataPort<?>, ObservableBounds> createDataPortToAreaMap() {
+        Map<IDataPort<?>, ObservableBounds> map = new HashMap<>();
+
+        for (InputParameter input : node.getInputs()) {
+            map.put(input, new ObservableBounds());
+        }
+
+        for (OutputReturn output : node.getOutputs()) {
+            map.put(output, new ObservableBounds());
+        }
+
+        return Collections.unmodifiableMap(map);
     }
 }

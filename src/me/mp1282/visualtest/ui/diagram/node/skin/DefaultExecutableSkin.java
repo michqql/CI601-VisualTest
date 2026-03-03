@@ -27,7 +27,7 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
         inputs.setSpacing(5);
         /* Populate input data ports */
         for(IDataPort<?> input : nodeUi.getNode().getInputs()) {
-            inputs.getChildren().add(new DataPortComponent(input));
+            inputs.getChildren().add(new DataPortComponent(this, input));
         }
 
         final HBox outputs = new HBox(); /* Container for data port outputs */
@@ -35,7 +35,7 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
         outputs.setSpacing(5);
         /* Populate output data ports */
         for(IDataPort<?> output : nodeUi.getNode().getOutputs()) {
-            outputs.getChildren().add(new DataPortComponent(output));
+            outputs.getChildren().add(new DataPortComponent(this, output));
         }
 
         /* Construct the main content */

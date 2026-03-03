@@ -7,8 +7,6 @@ import javafx.scene.layout.Pane;
 import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.ui.diagram.IDiagramElement;
-import me.mp1282.visualtest.ui.diagram.helper.ConnectionHelper;
-import me.mp1282.visualtest.ui.diagram.helper.SelectionHelper;
 import me.mp1282.visualtest.util.ReadOnlyMap;
 
 import java.util.HashMap;
@@ -18,20 +16,14 @@ import java.util.function.Consumer;
  */
 public class DiagramNodeHolderUi extends Pane {
 
-    private final ConnectionHelper connectionHelper;
-    private final SelectionHelper selectionHelper;
-
     /* A lookup map to find the UI element from the DiagramNode object */
     private final DiagramNodeHashMap<DiagramNode, DiagramNodeUi> nodeToUiMap;
 
-    private Consumer<DiagramNodeUi> onAddConsumer;
-    private Consumer<DiagramNodeUi> onRemoveConsumer;
+    private final Consumer<DiagramNodeUi> onAddConsumer;
+    private final Consumer<DiagramNodeUi> onRemoveConsumer;
 
     public DiagramNodeHolderUi(final Diagram diagram,
-                               ConnectionHelper connectionHelper, SelectionHelper selectionHelper,
                                Consumer<DiagramNodeUi> onAddConsumer, Consumer<DiagramNodeUi> onRemoveConsumer) {
-        this.connectionHelper = connectionHelper;
-        this.selectionHelper = selectionHelper;
         this.nodeToUiMap = new DiagramNodeHashMap<>();
         this.onAddConsumer = onAddConsumer;
         this.onRemoveConsumer = onRemoveConsumer;
@@ -42,7 +34,6 @@ public class DiagramNodeHolderUi extends Pane {
 
         /* Listen for changes in the diagram node's map and add/remove children UI as appropriate */
         diagram.nodesProperty().addListener((ListChangeListener<? super DiagramNode>) this::onListChange);
-
     }
 
     public ReadOnlyMap<DiagramNode, DiagramNodeUi> getNodeToUiMap() {

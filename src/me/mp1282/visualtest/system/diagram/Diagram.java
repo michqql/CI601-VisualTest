@@ -11,6 +11,7 @@ import me.mp1282.visualtest.system.diagram.port.OutputReturn;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.system.executable.data.IDataType;
 import me.mp1282.visualtest.util.DiagramZoomLevel;
+import me.mp1282.visualtest.util.PropertyHelper;
 
 import java.util.*;
 
@@ -66,13 +67,6 @@ public final class Diagram {
         return zoomLevel;
     }
 
-    /* Place an executable onto the diagram */
-    public DiagramNode placeExecutable(Executable executable) {
-        DiagramNode node = new DiagramNode(executable);
-        nodes.add(node);
-        return node;
-    }
-
     /* Create a flow connection between two flow ports */
     public boolean connectExecutionPath(DiagramNode source, DiagramNode target) {
 
@@ -98,16 +92,12 @@ public final class Diagram {
 
     /* Create a connection between two data ports */
     public boolean connectDataPorts(OutputReturn output, InputParameter input) {
-
-//        /* The source and target port cannot be both inputs or both outputs */
-//        if(sourcePort.inputPort() == targetPort.inputPort())
-//            return false;
-//
-//        if(canConnectExecutionPath(source, target) && canConnectDataPorts(source, target)) {
-//            source.dataConnectionsProperty().put(sourcePort, new Pair<>(target, targetPort));
-//            target.dataConnectionsProperty().put(targetPort, new Pair<>(source, sourcePort));
-//            return true;
-//        }
+        if(canConnectExecutionPath(output.getParentNode(), input.getParentNode()) &&
+                canConnectDataPorts(output.getParentNode(), input.getParentNode())) {
+            output.setTo(input);
+            input.setFrom(output);
+            return true;
+        }
         return false;
     }
 
@@ -120,28 +110,29 @@ public final class Diagram {
 
     /* Check if two flow ports can be connected together */
     public boolean canConnectExecutionPath(DiagramNode sourceNode, DiagramNode targetNode) {
-//        /* Check to see if this connection would result in a cyclic dependency */
-//        Set<DiagramNode> visitedNodes = new HashSet<>();
-//        Queue<DiagramNode> nodesToVisit = new LinkedList<>();
-//        nodesToVisit.add(targetNode);
-//
-//        while(!nodesToVisit.isEmpty()) {
-//            DiagramNode currentNode = nodesToVisit.poll();
-//            if(currentNode.equals(sourceNode)) {
-//                /* Cycle detected */
-//                return false;
-//            }
-//
-//            visitedNodes.add(currentNode);
-//
-//            /* Add connected flow nodes that haven't already been visited */
-//            PropertyHelper.whenPresentForEach(
-//                    List.of(currentNode.executionPathNodeBeforeProperty(), currentNode.executionPathNodeAfterProperty()),
-//                    node -> {
-//                        if(!visitedNodes.contains(node))
-//                            nodesToVisit.add(node);
-//                    });
-//        }
+        /* Check to see if this connection would result in a cyclic dependency */
+        Set<DiagramNode> visitedNodes = new HashSet<>();
+        Queue<DiagramNode> nodesToVisit = new LinkedList<>();
+        nodesToVisit.add(targetNode);
+
+        while(!nodesToVisit.isEmpty()) {
+            DiagramNode currentNode = nodesToVisit.poll();
+            if(currentNode.equals(sourceNode)) {
+                /* Cycle detected */
+                return false;
+            }
+
+            visitedNodes.add(currentNode);
+
+            /* Add connected execution path nodes that haven't already been visited */
+            final DiagramNode before = currentNode.getNodeBefore().getOther();
+            final DiagramNode after  = currentNode.getNodeAfter ().getOther();
+            if(before != null && !visitedNodes.contains(before))
+                nodesToVisit.add(before);
+
+            if(after != null && !visitedNodes.contains(after))
+                nodesToVisit.add(after);
+        }
 
         /* No cycle was detected, this connection is valid */
         return true;
@@ -149,25 +140,31 @@ public final class Diagram {
 
     /* Check if two data ports can be connected together */
     public boolean canConnectDataPorts(DiagramNode sourceNode, DiagramNode targetNode) {
-//        /* Check to see if this connection would result in a cyclic dependency */
-//        Set<DiagramNode> visitedNodes = new HashSet<>();
-//        Queue<DiagramNode> nodesToVisit = new LinkedList<>();
-//        nodesToVisit.add(targetNode);
-//        while(!nodesToVisit.isEmpty()) {
-//            DiagramNode currentNode = nodesToVisit.poll();
-//            if(currentNode.equals(sourceNode)) {
-//                /* Cycle detected */
-//                return false;
-//            }
-//
-//            visitedNodes.add(currentNode);
-//
-//            for(Pair<DiagramNode, DataPort> connectedNode : currentNode.dataConnectionsProperty().values()) {
-//                if(!visitedNodes.contains(connectedNode.key())) {
-//                    nodesToVisit.add(connectedNode.key());
-//                }
-//            }
-//        }
+        /* Check to see if this connection would result in a cyclic dependency */
+        Set<DiagramNode> visitedNodes = new HashSet<>();
+        Queue<DiagramNode> nodesToVisit = new LinkedList<>();
+        nodesToVisit.add(targetNode);
+        while(!nodesToVisit.isEmpty()) {
+            DiagramNode currentNode = nodesToVisit.poll();
+            if(currentNode.equals(sourceNode)) {
+                /* Cycle detected */
+                return false;
+            }
+
+            visitedNodes.add(currentNode);
+
+            /* The input data ports */
+            for (InputParameter input : currentNode.getInputs()) {
+                if(input.getFrom() != null && !visitedNodes.contains(input.getFrom().getParentNode()))
+                    nodesToVisit.add(input.getFrom().getParentNode());
+            }
+
+            /* The output data ports */
+            for(OutputReturn output : currentNode.getOutputs()) {
+                if(output.getTo() != null && !visitedNodes.contains(output.getTo().getParentNode()))
+                    nodesToVisit.add(output.getTo().getParentNode());
+            }
+        }
 
         /* No cycle was detected, this connection is valid */
         return true;

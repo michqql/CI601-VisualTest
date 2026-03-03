@@ -10,6 +10,7 @@ import me.mp1282.visualtest.system.VisualTestSystem;
 import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.DiagramRefExecutable;
 import me.mp1282.visualtest.system.diagram.DiagramRepository;
+import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.event.EventBus;
 import me.mp1282.visualtest.system.event.types.DiagramSelectedEvent;
 import me.mp1282.visualtest.ui.diagram.DiagramUi;
@@ -135,7 +136,8 @@ public class DiagramTabUi extends Tab {
 
     private void onClickAddToCurrentDiagram() {
         final DiagramRefExecutable refExe = diagramRepository.getReferenceExecutable(diagram);
-        diagramRepository.selectedDiagramProperty().get().placeExecutable(refExe);
+        final Diagram currentDiagram = diagramRepository.selectedDiagramProperty().get();
+        currentDiagram.nodesProperty().add(new DiagramNode(refExe));
     }
 
     private MenuItem getAddToCurrentDiagramMenuItem() {

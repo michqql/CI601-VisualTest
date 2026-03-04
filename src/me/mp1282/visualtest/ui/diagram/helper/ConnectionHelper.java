@@ -23,7 +23,7 @@ public class ConnectionHelper {
     private static final Color EXECUTION_PATH_LINE_COLOUR = Color.GREEN;
 
     private final DiagramUi diagramUi;
-    private final ConnectorHolderUi connectorHolderUi;
+    private ConnectorHolderUi connectorHolderUi;
     private final Line dataPortConnectionLine;
     private final ArrowLineUi executionPathConnectionLine;
 
@@ -31,9 +31,8 @@ public class ConnectionHelper {
     private final ObjectProperty<IDataPort<?>> dataPortSource;
     private final ObjectProperty<DiagramNodeUi> executionPathSourceNode;
 
-    public ConnectionHelper(DiagramUi diagramUi, ConnectorHolderUi connectorHolderUi) {
+    public ConnectionHelper(DiagramUi diagramUi) {
         this.diagramUi                   = diagramUi;
-        this.connectorHolderUi           = connectorHolderUi;
         this.dataPortConnectionLine      = new Line();
         this.executionPathConnectionLine = new ArrowLineUi();
         this.dataPortSource              = new SimpleObjectProperty<>();
@@ -48,6 +47,10 @@ public class ConnectionHelper {
 
         dataPortSource         .addListener((_, _, _) -> redrawConnectingLine());
         executionPathSourceNode.addListener((_, _, _) -> redrawConnectingLine());
+    }
+
+    public void setConnectorHolderUi(ConnectorHolderUi connectorHolderUi) {
+        this.connectorHolderUi = connectorHolderUi;
     }
 
     public Line getDataPortConnectionLine() {

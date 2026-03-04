@@ -192,6 +192,16 @@ public final class Diagram {
         return true;
     }
 
+    public DiagramNode getDiagramNodeByUniqueId(UUID uuid) {
+        /* Loop over all diagram nodes and return if an equivalent UUID is found */
+        for (DiagramNode node : nodes) {
+            if(node.getUniqueId().equals(uuid))
+                return node;
+        }
+
+        return null;
+    }
+
     public List<IDataPort<?>> getDataPortsWithoutConnections() {
         List<IDataPort<?>> unconnectedPorts = new ArrayList<>();
 
@@ -210,5 +220,19 @@ public final class Diagram {
         }
 
         return unconnectedPorts;
+    }
+
+    public List<OutputReturn> getAllConnectedOutputs() {
+        List<OutputReturn> list = new ArrayList<>();
+
+        for(DiagramNode node : nodes) {
+            for (OutputReturn output : node.getOutputs()) {
+                /* If the output is connected, add to the list */
+                if(output.getTo() != null)
+                    list.add(output);
+            }
+        }
+
+        return list;
     }
 }

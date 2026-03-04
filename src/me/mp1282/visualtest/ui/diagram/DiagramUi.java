@@ -33,6 +33,9 @@ import java.util.*;
 public class DiagramUi extends Pane {
 
     private final Diagram diagram;
+    /* Helpers */
+    private final SelectionHelper selectionHelper;
+    private final ConnectionHelper connectionHelper;
 
     private final DoubleProperty translateX;
     private final DoubleProperty translateY;
@@ -43,12 +46,11 @@ public class DiagramUi extends Pane {
     private final DiagramNodeHolderUi nodeHolderUi;
     private final ConnectorHolderUi connectorHolderUi;
 
-    /* Helpers */
-    private final SelectionHelper selectionHelper;
-    private final ConnectionHelper connectionHelper;
-
     public DiagramUi(final Diagram diagram) {
         this.diagram = diagram;
+        /* Helpers */
+        this.selectionHelper = new SelectionHelper();
+        this.connectionHelper = new ConnectionHelper(this);
 
         /* Diagram state */
         this.translateX = new SimpleDoubleProperty();
@@ -61,9 +63,7 @@ public class DiagramUi extends Pane {
         this.connectorHolderUi = new ConnectorHolderUi(this, nodeHolderUi,
                 this::onDataPortConnectorUiAdd, this::onExecutionPathConnectorUiAdd);
 
-        /* Helpers */
-        this.selectionHelper = new SelectionHelper();
-        this.connectionHelper = new ConnectionHelper(this, connectorHolderUi);
+        connectionHelper.setConnectorHolderUi(connectorHolderUi);
 
         /* Ensure the canvas cannot receive mouse events */
         gridCanvas.setMouseTransparent(true);
@@ -114,6 +114,7 @@ public class DiagramUi extends Pane {
                 infoUi
         );
 
+        /* Must rebuild connectors from the start in case the diagram was loaded with connections */
         connectorHolderUi.rebuildConnectors();
     }
 

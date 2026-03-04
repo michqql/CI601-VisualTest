@@ -20,9 +20,9 @@ public class DiagramNode extends Identifiable {
 
     private final Executable executable; /* The wrapped executable */
     private final NodeData data;
-    /* The data ports for this node */
-    private final Collection<InputParameter> inputs;
-    private final Collection<OutputReturn> outputs;
+    /* The data ports for this node - must be List type for get(index) operation */
+    private final List<InputParameter> inputs;
+    private final List<OutputReturn> outputs;
     /* The execution path ports for this node */
     private final ExecutionPath nodeBefore;
     private final ExecutionPath nodeAfter;
@@ -65,11 +65,11 @@ public class DiagramNode extends Identifiable {
         return data;
     }
 
-    public Collection<InputParameter> getInputs() {
+    public List<InputParameter> getInputs() {
         return inputs;
     }
 
-    public Collection<OutputReturn> getOutputs() {
+    public List<OutputReturn> getOutputs() {
         return outputs;
     }
 
@@ -133,24 +133,24 @@ public class DiagramNode extends Identifiable {
         cachedExecutionCost.set(cost);
     }
 
-    private Collection<InputParameter> createInputs() {
+    private List<InputParameter> createInputs() {
         List<InputParameter> inputs = new ArrayList<>();
 
         for (ParameterType type : executable.getParameterTypes()) {
             inputs.add(new InputParameter(this, type));
         }
 
-        return Collections.unmodifiableCollection(inputs);
+        return Collections.unmodifiableList(inputs);
     }
 
-    private Collection<OutputReturn> createOutputs() {
+    private List<OutputReturn> createOutputs() {
         List<OutputReturn> outputs = new ArrayList<>();
 
         for (ReturnType type : executable.getReturnTypes()) {
             outputs.add(new OutputReturn(this, type));
         }
 
-        return Collections.unmodifiableCollection(outputs);
+        return Collections.unmodifiableList(outputs);
     }
 
     @Override

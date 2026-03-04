@@ -3,49 +3,70 @@ package me.mp1282.visualtest.system.persistence.handlers;
 import com.google.gson.*;
 import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
+import me.mp1282.visualtest.system.diagram.port.InputParameter;
+import me.mp1282.visualtest.system.diagram.port.OutputReturn;
 import me.mp1282.visualtest.system.persistence.IPersistenceHandler;
 import me.mp1282.visualtest.util.GsonUtil;
 
 import java.lang.reflect.Type;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 
 public class DiagramPersistenceHandler implements IPersistenceHandler<Diagram> {
 
-    private static final String NAME_KEY        = "name";
-    private static final String NODES_KEY       = "nodes";
-    private static final String CONNECTIONS_KEY = "connections";
+    private static final String NAME_KEY             = "name";
+    private static final String TRANSLATE_X_KEY      = "translate_x";
+    private static final String TRANSLATE_Y_KEY      = "translate_y";
+    private static final String NODES_KEY            = "nodes";
+    private static final String CONNECTIONS_KEY      = "connections";
+    private static final String FROM_KEY             = "from";
+    private static final String TO_KEY               = "to";
+    private static final String CONNECTION_UUID_KEY  = "uuid";
+    private static final String CONNECTION_INDEX_KEY = "index";
 
     @Override
     public Diagram deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext ctx) throws JsonParseException {
         final JsonObject root = (JsonObject) jsonElement;
         final Diagram diagram = new Diagram();
         diagram.nameProperty().set(GsonUtil.getAsOrDefault(root.get(NAME_KEY), JsonElement::getAsString, ""));
+        diagram.translateXProperty().set(GsonUtil.getAsOrDefault(root.get(TRANSLATE_X_KEY), JsonElement::getAsDouble, 0).doubleValue());
+        diagram.translateYProperty().set(GsonUtil.getAsOrDefault(root.get(TRANSLATE_Y_KEY), JsonElement::getAsDouble, 0).doubleValue());
 
         final JsonArray nodeArray = root.getAsJsonArray(NODES_KEY);
         for(JsonElement nodeElement : nodeArray) {
             diagram.addDiagramNode(ctx.deserialize(nodeElement, DiagramNode.class));
         }
 
-//        final JsonArray connectionArray = root.getAsJsonArray(CONNECTIONS_KEY);
-//        for(JsonElement connElement : connectionArray) {
-//            JsonObject conn = connElement.getAsJsonObject();
-//
-//            /* A */
-//            UUID nodeAId = ctx.deserialize(conn.get("node_a"), UUID.class);
-//            boolean portAInput = conn.get("port_a_input").getAsBoolean();
-//            int portAIndex = conn.get("port_a_index").getAsInt();
-//            DiagramNode nodeA = diagram.getNodeByUniqueId(nodeAId);
-//            DataPort portA = nodeA.getExecutable().getDataPort(portAInput, portAIndex);
-//
-//            /* B */
-//            UUID nodeBId = ctx.deserialize(conn.get("node_b"), UUID.class);
-//            boolean portBInput = conn.get("port_b_input").getAsBoolean();
-//            int portBIndex = conn.get("port_b_index").getAsInt();
-//            DiagramNode nodeB = diagram.getNodeByUniqueId(nodeBId);
-//            DataPort portB = nodeB.getExecutable().getDataPort(portBInput, portBIndex);
-//
-//            diagram.connectDataPorts(nodeA, portA, nodeB, portB);
-//        }
+        final JsonArray connectionArray = root.getAsJsonArray(CONNECTIONS_KEY);
+        for(JsonElement connElement : connectionArray) {
+            final JsonObject connection = connElement.getAsJsonObject();
+            final JsonObject from       = connection.getAsJsonObject(FROM_KEY);
+            final JsonObject to         = connection.getAsJsonObject(TO_KEY);
+
+            final UUID fromUUID = ctx.deserialize(from.get(CONNECTION_UUID_KEY), UUID.class);
+            final UUID toUUID   = ctx.deserialize(to  .get(CONNECTION_UUID_KEY), UUID.class);
+
+            final int fromIndex = from.get(CONNECTION_INDEX_KEY).getAsInt();
+            final int toIndex   = to  .get(CONNECTION_INDEX_KEY).getAsInt();
+
+            final DiagramNode fromNode = diagram.getDiagramNodeByUniqueId(fromUUID);
+            final DiagramNode toNode   = diagram.getDiagramNodeByUniqueId(toUUID  );
+            if(fromNode == null || toNode == null)
+                throw new RuntimeException("What the heck");
+
+            final OutputReturn   output = fromNode.getOutputs().get(fromIndex);
+            final InputParameter input  = toNode  .getInputs ().get(toIndex  );
+
+            /* Could use Diagram.connectDataPorts, however this checks the DAG for cycles
+             * Which would perform this operation for every connection loaded.
+             * Instead, we trust that when saving there were no cycles, and the user did not edit
+             * save data to introduce a cycle.
+             */
+
+            output.setTo(input);
+            input.setFrom(output);
+        }
 
         return diagram;
     }
@@ -55,6 +76,8 @@ public class DiagramPersistenceHandler implements IPersistenceHandler<Diagram> {
         final JsonObject root = new JsonObject();
 
         root.addProperty(NAME_KEY, diagram.nameProperty().get());
+        root.addProperty(TRANSLATE_X_KEY, diagram.translateXProperty().get());
+        root.addProperty(TRANSLATE_Y_KEY, diagram.translateYProperty().get());
 
         final JsonArray nodeArray = new JsonArray();
         for(DiagramNode node : diagram.nodesProperty()) {
@@ -62,22 +85,25 @@ public class DiagramPersistenceHandler implements IPersistenceHandler<Diagram> {
         }
         root.add(NODES_KEY, nodeArray);
 
-//        final JsonArray connectionArray = new JsonArray();
-//        for(DataPortConnectionData data : diagram.getAllDataPortConnections()) {
-//            JsonObject conn = new JsonObject();
-//            /* A */
-//            conn.add("node_a", ctx.serialize(data.nodeA().getUniqueId()));
-//            conn.addProperty("port_a_input", data.portA().inputPort());
-//            conn.addProperty("port_a_index", data.portA().portIndex());
-//
-//            /* B */
-//            conn.add("node_b", ctx.serialize(data.nodeB().getUniqueId()));
-//            conn.addProperty("port_b_input", data.portB().inputPort());
-//            conn.addProperty("port_b_index", data.portB().portIndex());
-//
-//            connectionArray.add(conn);
-//        }
-//        root.add(CONNECTIONS_KEY, connectionArray);
+        final JsonArray connectionArray = new JsonArray();
+        for (OutputReturn output : diagram.getAllConnectedOutputs()) {
+            final InputParameter input = output.getTo();
+
+            JsonObject connection = new JsonObject();
+
+            JsonObject from = new JsonObject();
+            from.add(CONNECTION_UUID_KEY, ctx.serialize(output.getParentNode().getUniqueId(), UUID.class));
+            from.addProperty(CONNECTION_INDEX_KEY, output.getType().getIndex());
+
+            JsonObject to = new JsonObject();
+            to.add(CONNECTION_UUID_KEY, ctx.serialize(input.getParentNode().getUniqueId(), UUID.class));
+            to.addProperty(CONNECTION_INDEX_KEY, input.getType().getIndex());
+
+            connection.add(FROM_KEY, from);
+            connection.add(TO_KEY, to);
+            connectionArray.add(connection);
+        }
+        root.add(CONNECTIONS_KEY, connectionArray);
 
         return root;
     }

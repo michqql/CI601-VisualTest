@@ -1,8 +1,8 @@
 package me.mp1282.visualtest.system.executable;
 
-import me.mp1282.visualtest.system.diagram.node.NodeData;
-import me.mp1282.visualtest.system.executable.data.ParameterType;
-import me.mp1282.visualtest.system.executable.data.ReturnType;
+import me.mp1282.visualtest.system.diagram.node.data.NodeData;
+import me.mp1282.visualtest.system.executable.iodata.ParameterType;
+import me.mp1282.visualtest.system.executable.iodata.ReturnType;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;

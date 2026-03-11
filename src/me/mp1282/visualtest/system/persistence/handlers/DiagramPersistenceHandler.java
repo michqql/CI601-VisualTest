@@ -1,11 +1,13 @@
 package me.mp1282.visualtest.system.persistence.handlers;
 
 import com.google.gson.*;
+import me.mp1282.visualtest.system.VisualTestSystem;
 import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.diagram.port.InputParameter;
 import me.mp1282.visualtest.system.diagram.port.OutputReturn;
 import me.mp1282.visualtest.system.persistence.IPersistenceHandler;
+import me.mp1282.visualtest.system.persistence.exceptions.UnsupportedSystemVersionException;
 import me.mp1282.visualtest.util.GsonUtil;
 
 import java.lang.reflect.Type;
@@ -15,6 +17,8 @@ import java.util.UUID;
 
 public class DiagramPersistenceHandler implements IPersistenceHandler<Diagram> {
 
+    private static final String VERSION_MAJOR_KEY    = "version_major";
+    private static final String VERSION_MINOR_KEY    = "version_minor";
     private static final String NAME_KEY             = "name";
     private static final String TRANSLATE_X_KEY      = "translate_x";
     private static final String TRANSLATE_Y_KEY      = "translate_y";
@@ -28,6 +32,13 @@ public class DiagramPersistenceHandler implements IPersistenceHandler<Diagram> {
     @Override
     public Diagram deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext ctx) throws JsonParseException {
         final JsonObject root = (JsonObject) jsonElement;
+
+        /* Check that the version trying to be loaded by the file is supported */
+        int versionMajor = GsonUtil.getAsOrDefault(root.get(VERSION_MAJOR_KEY), JsonElement::getAsInt, -1);
+        int versionMinor = GsonUtil.getAsOrDefault(root.get(VERSION_MINOR_KEY), JsonElement::getAsInt, -1);
+        if(!VisualTestSystem.isVersionSupported(versionMajor, versionMinor))
+            throw new JsonParseException(new UnsupportedSystemVersionException(versionMajor, versionMinor));
+
         final Diagram diagram = new Diagram();
         diagram.nameProperty().set(GsonUtil.getAsOrDefault(root.get(NAME_KEY), JsonElement::getAsString, ""));
         diagram.translateXProperty().set(GsonUtil.getAsOrDefault(root.get(TRANSLATE_X_KEY), JsonElement::getAsDouble, 0).doubleValue());
@@ -75,6 +86,11 @@ public class DiagramPersistenceHandler implements IPersistenceHandler<Diagram> {
     public JsonElement serialize(Diagram diagram, Type type, JsonSerializationContext ctx) {
         final JsonObject root = new JsonObject();
 
+        /* Version */
+        root.addProperty(VERSION_MAJOR_KEY, VisualTestSystem.SYSTEM_VERSION_MAJOR);
+        root.addProperty(VERSION_MINOR_KEY, VisualTestSystem.SYSTEM_VERSION_MINOR);
+
+        /* Diagram info */
         root.addProperty(NAME_KEY, diagram.nameProperty().get());
         root.addProperty(TRANSLATE_X_KEY, diagram.translateXProperty().get());
         root.addProperty(TRANSLATE_Y_KEY, diagram.translateYProperty().get());

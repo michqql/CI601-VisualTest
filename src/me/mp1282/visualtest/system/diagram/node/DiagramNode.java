@@ -1,12 +1,13 @@
 package me.mp1282.visualtest.system.diagram.node;
 
 import javafx.beans.property.*;
+import me.mp1282.visualtest.system.diagram.node.data.NodeData;
 import me.mp1282.visualtest.system.diagram.port.ExecutionPath;
 import me.mp1282.visualtest.system.diagram.port.InputParameter;
 import me.mp1282.visualtest.system.diagram.port.OutputReturn;
 import me.mp1282.visualtest.system.executable.Executable;
-import me.mp1282.visualtest.system.executable.data.ParameterType;
-import me.mp1282.visualtest.system.executable.data.ReturnType;
+import me.mp1282.visualtest.system.executable.iodata.ParameterType;
+import me.mp1282.visualtest.system.executable.iodata.ReturnType;
 import me.mp1282.visualtest.util.Identifiable;
 
 import java.util.*;

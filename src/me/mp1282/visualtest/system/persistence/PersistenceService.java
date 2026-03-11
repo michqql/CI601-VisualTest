@@ -8,6 +8,7 @@ import me.mp1282.visualtest.system.VisualTestSystem;
 import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.diagram.DiagramRepository;
+import me.mp1282.visualtest.system.diagram.node.data.NodeData;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.system.jarload.LoadedJar;
 import me.mp1282.visualtest.system.persistence.handlers.*;
@@ -33,6 +34,7 @@ public class PersistenceService implements IReset {
                 .registerTypeAdapter(DiagramNode.class,        new DiagramNodePersistenceHandler())
                 .registerTypeAdapter(Executable.class,         new ExecutablePersistenceHandler())
                 .registerTypeAdapter(LoadedJar.class,          new LoadedJarPersistenceHandler())
+                .registerTypeAdapter(NodeData.class,           new NodeDataPersistenceHandler())
                 /* Other settings */
                 .setPrettyPrinting()
                 .create();

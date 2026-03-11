@@ -3,7 +3,6 @@ package me.mp1282.visualtest.system.inbuilt;
 import me.mp1282.visualtest.system.IReset;
 import me.mp1282.visualtest.system.executable.IExecutableTypeHolder;
 import me.mp1282.visualtest.system.inbuilt.category.*;
-import me.mp1282.visualtest.system.persistence.IPersistenceHandler;
 import me.mp1282.visualtest.util.Pair;
 
 import java.lang.reflect.Method;

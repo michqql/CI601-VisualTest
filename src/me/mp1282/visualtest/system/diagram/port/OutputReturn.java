@@ -1,7 +1,7 @@
 package me.mp1282.visualtest.system.diagram.port;
 
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
-import me.mp1282.visualtest.system.executable.data.ReturnType;
+import me.mp1282.visualtest.system.executable.iodata.ReturnType;
 
 public class OutputReturn implements IDataPort<ReturnType> {
 

@@ -7,7 +7,7 @@ import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.diagram.port.IDataPort;
 import me.mp1282.visualtest.system.diagram.port.InputParameter;
 import me.mp1282.visualtest.system.diagram.port.OutputReturn;
-import me.mp1282.visualtest.system.executable.data.IDataType;
+import me.mp1282.visualtest.system.executable.iodata.IDataType;
 
 import java.util.*;
 

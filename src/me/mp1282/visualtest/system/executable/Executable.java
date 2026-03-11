@@ -1,14 +1,13 @@
 package me.mp1282.visualtest.system.executable;
 
 import javafx.scene.input.DataFormat;
-import me.mp1282.visualtest.system.diagram.node.NodeData;
-import me.mp1282.visualtest.system.executable.data.ParameterType;
-import me.mp1282.visualtest.system.executable.data.ReturnType;
+import me.mp1282.visualtest.system.diagram.node.data.NodeData;
+import me.mp1282.visualtest.system.executable.iodata.ParameterType;
+import me.mp1282.visualtest.system.executable.iodata.ReturnType;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * An abstract class that wraps an underlying executable piece of code.
@@ -99,10 +98,17 @@ public abstract class Executable {
                     .append(getName())
                     .append('!')
                     .append(getNumberOfParameters())
-                    .append('#');
+                    .append('#')
+                    .append(getNumberOfReturnValues())
+                    .append("!_");
 
             for(ParameterType parameterType : getParameterTypes())
                 builder.append(parameterType.getDataType().getSimpleName()).append('_');
+
+            builder.append('#');
+
+            for(ReturnType returnType : getReturnTypes())
+                builder.append(returnType.getDataType().getSimpleName()).append('_');
 
             cachedPersistenceId = builder.toString();
         }

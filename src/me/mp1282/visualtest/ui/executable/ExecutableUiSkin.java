@@ -7,8 +7,8 @@ import javafx.scene.control.SkinBase;
 import javafx.scene.paint.Color;
 import javafx.scene.text.TextAlignment;
 import me.mp1282.visualtest.system.executable.Executable;
-import me.mp1282.visualtest.system.executable.data.ParameterType;
-import me.mp1282.visualtest.system.executable.data.ReturnType;
+import me.mp1282.visualtest.system.executable.iodata.ParameterType;
+import me.mp1282.visualtest.system.executable.iodata.ReturnType;
 
 public class ExecutableUiSkin extends SkinBase<ExecutableUi> {
 
@@ -33,7 +33,6 @@ public class ExecutableUiSkin extends SkinBase<ExecutableUi> {
 
         /* Draw the skin */
         redraw();
-
     }
 
     private void redraw() {

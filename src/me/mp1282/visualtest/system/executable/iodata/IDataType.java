@@ -1,4 +1,4 @@
-package me.mp1282.visualtest.system.executable.data;
+package me.mp1282.visualtest.system.executable.iodata;
 
 public interface IDataType {
 

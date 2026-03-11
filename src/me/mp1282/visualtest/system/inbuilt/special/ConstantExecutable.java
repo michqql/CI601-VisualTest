@@ -1,13 +1,14 @@
 package me.mp1282.visualtest.system.inbuilt.special;
 
-import me.mp1282.visualtest.system.diagram.node.NodeData;
-import me.mp1282.visualtest.system.executable.Executable;
-import me.mp1282.visualtest.system.executable.data.ParameterType;
-import me.mp1282.visualtest.system.executable.data.ReturnType;
+import me.mp1282.visualtest.system.diagram.node.data.ConstantNodeData;
+import me.mp1282.visualtest.system.diagram.node.data.NodeData;
+import me.mp1282.visualtest.system.executable.iodata.ParameterType;
+import me.mp1282.visualtest.system.executable.iodata.ReturnType;
+import me.mp1282.visualtest.system.inbuilt.SpecialExecutable;
 
 import java.util.List;
 
-public class ConstantExecutable extends Executable {
+public class ConstantExecutable extends SpecialExecutable {
 
     @Override
     protected void setup(List<ParameterType> parameterTypes, List<ReturnType> returnTypes) {
@@ -16,31 +17,23 @@ public class ConstantExecutable extends Executable {
     }
 
     @Override
-    public void execute(Object[] inputs, Object[] outputs,
-                        final NodeData data) throws Exception {
-        if(data instanceof ConstantData constantData)
-            outputs[0] = constantData.getConstant();
+    public void execute(Object[] inputs, Object[] outputs, final NodeData data) {
+        if(data instanceof ConstantNodeData constantData)
+            outputs[0] = constantData.constantProperty().get();
     }
 
     @Override
     public String getName() {
-        return "";
+        return "Constant";
     }
 
     @Override
     protected String getNamespace() {
-        return "";
+        return "*special";
     }
 
-    public static class ConstantData extends NodeData {
-        private Object constant;
-
-        public Object getConstant() {
-            return constant;
-        }
-
-        public void setConstant(Object constant) {
-            this.constant = constant;
-        }
+    @Override
+    public NodeData createNodeData() {
+        return new ConstantNodeData();
     }
 }

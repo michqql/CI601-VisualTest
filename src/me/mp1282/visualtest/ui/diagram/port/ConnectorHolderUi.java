@@ -78,7 +78,7 @@ public class ConnectorHolderUi extends Pane {
              */
             for (ExecutionPath afterPath : node.getNodeAfterPaths()) {
                 if (afterPath.getOther() != null) {
-                    createExecutionPathConnectorUi(nodeToUiMap.get(afterPath.getOther()), currentNodeUi);
+                    createExecutionPathConnectorUi(currentNodeUi, nodeToUiMap.get(afterPath.getOther()));
                 }
             }
         }
@@ -96,8 +96,8 @@ public class ConnectorHolderUi extends Pane {
         getChildren().add(connector);
     }
 
-    private void createExecutionPathConnectorUi(DiagramNodeUi before, DiagramNodeUi after) {
-        final ExecutionPathConnectorLineUi connector = new ExecutionPathConnectorLineUi(before, after);
+    private void createExecutionPathConnectorUi(DiagramNodeUi source, DiagramNodeUi target) {
+        final ExecutionPathConnectorLineUi connector = new ExecutionPathConnectorLineUi(source, target);
 
         if(onExecutionPathConnectorAdd != null)
             onExecutionPathConnectorAdd.accept(connector);

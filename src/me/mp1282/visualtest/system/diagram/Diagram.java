@@ -4,6 +4,7 @@ import javafx.beans.InvalidationListener;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
+import me.mp1282.visualtest.system.diagram.port.ExecutionPath;
 import me.mp1282.visualtest.system.diagram.port.IDataPort;
 import me.mp1282.visualtest.system.diagram.port.InputParameter;
 import me.mp1282.visualtest.system.diagram.port.OutputReturn;
@@ -87,29 +88,60 @@ public final class Diagram {
             disconnectDataPort(output);
         }
 
-        disconnectExecutionPath(node);
+        disconnectAllExecutionPaths(node);
     }
 
-    /* Create a flow connection between two flow ports */
-    public boolean connectExecutionPath(DiagramNode source, DiagramNode target) {
-
+    /**
+     * Connects the execution path at {@code branchIndex} of {@code source} to {@code target}.
+     * Returns {@code true} if the connection was made successfully.
+     */
+    public boolean connectExecutionPath(DiagramNode source, int branchIndex, DiagramNode target) {
         if(canConnectExecutionPath(source, target) && canConnectDataPorts(source, target)) {
-            source.getNodeAfter().setOther(target);
+            source.getNodeAfterPath(branchIndex).setOther(target);
             target.getNodeBefore().setOther(source);
             return true;
         }
         return false;
     }
 
-    public void disconnectExecutionPath(DiagramNode node) {
-        if(node.getNodeBefore().getOther() != null)
-            node.getNodeBefore().getOther().getNodeAfter().setOther(null);
+    /**
+     * Disconnects the specific execution path between {@code source} and {@code target},
+     * identified by finding which of source's outgoing paths points to target.
+     */
+    public void disconnectExecutionPath(DiagramNode source, DiagramNode target) {
+        for (ExecutionPath afterPath : source.getNodeAfterPaths()) {
+            if (afterPath.getOther() == target) {
+                afterPath.setOther(null);
+                target.getNodeBefore().setOther(null);
+                return;
+            }
+        }
+    }
 
-        if(node.getNodeAfter().getOther() != null)
-            node.getNodeAfter().getOther().getNodeBefore().setOther(null);
+    /**
+     * Disconnects ALL execution paths connected to {@code node} — both its incoming
+     * (nodeBefore) and all outgoing paths. Used when removing a node from the diagram.
+     */
+    public void disconnectAllExecutionPaths(DiagramNode node) {
+        /* Sever the incoming link: find which afterPath of the predecessor points here */
+        if (node.getNodeBefore().getOther() != null) {
+            DiagramNode predecessor = node.getNodeBefore().getOther();
+            for (ExecutionPath afterPath : predecessor.getNodeAfterPaths()) {
+                if (afterPath.getOther() == node) {
+                    afterPath.setOther(null);
+                    break;
+                }
+            }
+            node.getNodeBefore().setOther(null);
+        }
 
-        node.getNodeBefore().setOther(null);
-        node.getNodeAfter().setOther(null);
+        /* Sever all outgoing links */
+        for (ExecutionPath afterPath : node.getNodeAfterPaths()) {
+            if (afterPath.getOther() != null) {
+                afterPath.getOther().getNodeBefore().setOther(null);
+                afterPath.setOther(null);
+            }
+        }
     }
 
     /* Create a connection between two data ports */
@@ -130,9 +162,8 @@ public final class Diagram {
         dataPort.disconnect();
     }
 
-    /* Check if two flow ports can be connected together */
+    /* Check if connecting source → target via an execution path would create a cycle */
     public boolean canConnectExecutionPath(DiagramNode sourceNode, DiagramNode targetNode) {
-        /* Check to see if this connection would result in a cyclic dependency */
         Set<DiagramNode> visitedNodes = new HashSet<>();
         Queue<DiagramNode> nodesToVisit = new LinkedList<>();
         nodesToVisit.add(targetNode);
@@ -146,14 +177,17 @@ public final class Diagram {
 
             visitedNodes.add(currentNode);
 
-            /* Add connected execution path nodes that haven't already been visited */
+            /* Follow incoming execution path */
             final DiagramNode before = currentNode.getNodeBefore().getOther();
-            final DiagramNode after  = currentNode.getNodeAfter ().getOther();
             if(before != null && !visitedNodes.contains(before))
                 nodesToVisit.add(before);
 
-            if(after != null && !visitedNodes.contains(after))
-                nodesToVisit.add(after);
+            /* Follow all outgoing execution paths */
+            for (ExecutionPath afterPath : currentNode.getNodeAfterPaths()) {
+                DiagramNode after = afterPath.getOther();
+                if(after != null && !visitedNodes.contains(after))
+                    nodesToVisit.add(after);
+            }
         }
 
         /* No cycle was detected, this connection is valid */
@@ -237,4 +271,19 @@ public final class Diagram {
 
         return list;
     }
+
+    /** Returns all execution path connections in the diagram as (source, branchIndex, target) tuples. */
+    public List<ExecutionPathConnection> getAllExecutionPathConnections() {
+        List<ExecutionPathConnection> connections = new ArrayList<>();
+        for (DiagramNode node : nodes) {
+            List<ExecutionPath> paths = node.getNodeAfterPaths();
+            for (int i = 0; i < paths.size(); i++) {
+                if (paths.get(i).getOther() != null)
+                    connections.add(new ExecutionPathConnection(node, i, paths.get(i).getOther()));
+            }
+        }
+        return connections;
+    }
+
+    public record ExecutionPathConnection(DiagramNode source, int branchIndex, DiagramNode target) {}
 }

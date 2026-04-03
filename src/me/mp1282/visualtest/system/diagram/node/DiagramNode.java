@@ -19,9 +19,10 @@ public class DiagramNode extends Identifiable {
     /* The data ports for this node - must be List type for get(index) operation */
     private final List<InputParameter> inputs;
     private final List<OutputReturn> outputs;
-    /* The execution path ports for this node */
+    /* Single incoming execution path port */
     private final ExecutionPath nodeBefore;
-    private final ExecutionPath nodeAfter;
+    /* Outgoing execution path ports — size driven by executable.getExecutionPathOutputCount() */
+    private final List<ExecutionPath> nodeAfterPaths;
 
     /* Position data */
     private final DoubleProperty x;
@@ -31,17 +32,17 @@ public class DiagramNode extends Identifiable {
 
     public DiagramNode(Executable executable) {
         super();
-        this.executable                  = executable;
-        this.data                        = executable.createNodeData();
-        this.inputs                      = createInputs();
-        this.outputs                     = createOutputs();
-        this.nodeBefore                  = new ExecutionPath(this);
-        this.nodeAfter                   = new ExecutionPath(this);
+        this.executable     = executable;
+        this.data           = executable.createNodeData();
+        this.inputs         = createInputs();
+        this.outputs        = createOutputs();
+        this.nodeBefore     = new ExecutionPath(this);
+        this.nodeAfterPaths = createNodeAfterPaths(executable.getExecutionPathOutputCount());
 
-        this.x                           = new SimpleDoubleProperty();
-        this.y                           = new SimpleDoubleProperty();
-        this.width                       = new SimpleDoubleProperty();
-        this.height                      = new SimpleDoubleProperty();
+        this.x      = new SimpleDoubleProperty();
+        this.y      = new SimpleDoubleProperty();
+        this.width  = new SimpleDoubleProperty();
+        this.height = new SimpleDoubleProperty();
     }
 
     public Executable getExecutable() {
@@ -64,8 +65,14 @@ public class DiagramNode extends Identifiable {
         return nodeBefore;
     }
 
-    public ExecutionPath getNodeAfter() {
-        return nodeAfter;
+    /** Returns all outgoing execution path ports. Most nodes have exactly one. */
+    public List<ExecutionPath> getNodeAfterPaths() {
+        return nodeAfterPaths;
+    }
+
+    /** Convenience accessor for path at the given index. */
+    public ExecutionPath getNodeAfterPath(int index) {
+        return nodeAfterPaths.get(index);
     }
 
     public DoubleProperty xProperty() {
@@ -82,6 +89,14 @@ public class DiagramNode extends Identifiable {
 
     public DoubleProperty heightProperty() {
         return height;
+    }
+
+    private List<ExecutionPath> createNodeAfterPaths(int count) {
+        List<ExecutionPath> paths = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            paths.add(new ExecutionPath(this));
+        }
+        return Collections.unmodifiableList(paths);
     }
 
     private List<InputParameter> createInputs() {

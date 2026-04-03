@@ -121,6 +121,31 @@ public abstract class Executable {
     }
 
     /**
+     * Gets the number of execution path outputs this executable exposes.
+     * Most executables have one (sequential flow). A branch executable has two (true / false),
+     * and a future switch executable could have arbitrarily many.
+     *
+     * @return The number of execution path outputs (1 by default).
+     */
+    public int getExecutionPathOutputCount() {
+        return 1;
+    }
+
+    /**
+     * Given the inputs passed to {@link #execute}, returns the index of the execution path
+     * that should be followed. All other paths will be skipped by the runtime.
+     * <p>
+     * Only meaningful when {@link #getExecutionPathOutputCount()} returns more than one.
+     * The default always returns {@code 0} (first / only path).
+     *
+     * @param inputs The same inputs array that was passed to execute.
+     * @return The index into {@link me.mp1282.visualtest.system.diagram.node.DiagramNode#getNodeAfterPaths()}.
+     */
+    public int getChosenBranchIndex(Object[] inputs) {
+        return 0;
+    }
+
+    /**
      * Gets the number of parameters that the underlying code requires
      * @return Parameter count
      */

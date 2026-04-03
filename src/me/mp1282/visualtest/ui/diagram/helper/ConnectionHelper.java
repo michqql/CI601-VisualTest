@@ -30,6 +30,7 @@ public class ConnectionHelper {
     /* Variables to handle connecting of data/flow ports together */
     private final ObjectProperty<IDataPort<?>> dataPortSource;
     private final ObjectProperty<DiagramNodeUi> executionPathSourceNode;
+    private int pendingBranchIndex = 0;
 
     public ConnectionHelper(DiagramUi diagramUi) {
         this.diagramUi                   = diagramUi;
@@ -115,13 +116,24 @@ public class ConnectionHelper {
 
 
     /**
-     * Tries to handle connecting the execution path of nodes.
+     * Tries to handle connecting the execution path of nodes using branch index 0.
      *
-     * @param nodeUi The {@code me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi} that was clicked by the user
-     *               or the action was initiated against.
+     * @param nodeUi The {@code me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi} that was clicked.
      * @return {@code true} if this function handled the request.
      */
     public boolean handleExecutionPathConnecting(DiagramNodeUi nodeUi, boolean initial) {
+        return handleExecutionPathConnecting(nodeUi, initial, 0);
+    }
+
+    /**
+     * Tries to handle connecting the execution path of nodes.
+     *
+     * @param nodeUi      The node that was clicked by the user or the action was initiated against.
+     * @param initial     {@code true} when starting a new connection, {@code false} when completing one.
+     * @param branchIndex The execution path output index on the source node to connect.
+     * @return {@code true} if this function handled the request.
+     */
+    public boolean handleExecutionPathConnecting(DiagramNodeUi nodeUi, boolean initial, int branchIndex) {
         /* Ensure that the user is not currently connecting data ports */
         if(dataPortSource.get() != null)
             return false;
@@ -134,12 +146,13 @@ public class ConnectionHelper {
          * Otherwise, create the execution path connection between the two nodes.
          */
         if(executionPathSourceNode.get() == null) {
+            pendingBranchIndex = branchIndex;
             executionPathSourceNode.set(nodeUi);
         } else {
             final DiagramNode source = executionPathSourceNode.get().getNode();
             final DiagramNode target = nodeUi.getNode();
 
-            boolean connected = diagramUi.getDiagram().connectExecutionPath(source, target);
+            boolean connected = diagramUi.getDiagram().connectExecutionPath(source, pendingBranchIndex, target);
 
             if(connected) {
                 connectorHolderUi.rebuildConnectors();

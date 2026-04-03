@@ -17,17 +17,21 @@ import java.util.UUID;
 
 public class DiagramPersistenceHandler implements IPersistenceHandler<Diagram> {
 
-    private static final String VERSION_MAJOR_KEY    = "version_major";
-    private static final String VERSION_MINOR_KEY    = "version_minor";
-    private static final String NAME_KEY             = "name";
-    private static final String TRANSLATE_X_KEY      = "translate_x";
-    private static final String TRANSLATE_Y_KEY      = "translate_y";
-    private static final String NODES_KEY            = "nodes";
-    private static final String CONNECTIONS_KEY      = "connections";
-    private static final String FROM_KEY             = "from";
-    private static final String TO_KEY               = "to";
-    private static final String CONNECTION_UUID_KEY  = "uuid";
-    private static final String CONNECTION_INDEX_KEY = "index";
+    private static final String VERSION_MAJOR_KEY      = "version_major";
+    private static final String VERSION_MINOR_KEY      = "version_minor";
+    private static final String NAME_KEY               = "name";
+    private static final String TRANSLATE_X_KEY        = "translate_x";
+    private static final String TRANSLATE_Y_KEY        = "translate_y";
+    private static final String NODES_KEY              = "nodes";
+    private static final String CONNECTIONS_KEY        = "connections";
+    private static final String FROM_KEY               = "from";
+    private static final String TO_KEY                 = "to";
+    private static final String CONNECTION_UUID_KEY    = "uuid";
+    private static final String CONNECTION_INDEX_KEY   = "index";
+    private static final String EXEC_PATHS_KEY         = "execution_paths";
+    private static final String EXEC_PATH_SOURCE_KEY   = "source";
+    private static final String EXEC_PATH_TARGET_KEY   = "target";
+    private static final String EXEC_PATH_BRANCH_KEY   = "branch_index";
 
     @Override
     public Diagram deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext ctx) throws JsonParseException {
@@ -79,6 +83,24 @@ public class DiagramPersistenceHandler implements IPersistenceHandler<Diagram> {
             input.setFrom(output);
         }
 
+        /* Restore execution path connections */
+        final JsonArray execPathArray = root.getAsJsonArray(EXEC_PATHS_KEY);
+        if (execPathArray != null) {
+            for (JsonElement execPathEl : execPathArray) {
+                final JsonObject execPath = execPathEl.getAsJsonObject();
+                final UUID sourceUUID = ctx.deserialize(execPath.get(EXEC_PATH_SOURCE_KEY), UUID.class);
+                final UUID targetUUID = ctx.deserialize(execPath.get(EXEC_PATH_TARGET_KEY), UUID.class);
+                final int branchIndex = execPath.get(EXEC_PATH_BRANCH_KEY).getAsInt();
+
+                final DiagramNode sourceNode = diagram.getDiagramNodeByUniqueId(sourceUUID);
+                final DiagramNode targetNode = diagram.getDiagramNodeByUniqueId(targetUUID);
+                if (sourceNode != null && targetNode != null) {
+                    sourceNode.getNodeAfterPath(branchIndex).setOther(targetNode);
+                    targetNode.getNodeBefore().setOther(sourceNode);
+                }
+            }
+        }
+
         return diagram;
     }
 
@@ -120,6 +142,17 @@ public class DiagramPersistenceHandler implements IPersistenceHandler<Diagram> {
             connectionArray.add(connection);
         }
         root.add(CONNECTIONS_KEY, connectionArray);
+
+        /* Save execution path connections */
+        final JsonArray execPathArray = new JsonArray();
+        for (Diagram.ExecutionPathConnection conn : diagram.getAllExecutionPathConnections()) {
+            JsonObject execPath = new JsonObject();
+            execPath.add(EXEC_PATH_SOURCE_KEY, ctx.serialize(conn.source().getUniqueId(), UUID.class));
+            execPath.add(EXEC_PATH_TARGET_KEY, ctx.serialize(conn.target().getUniqueId(), UUID.class));
+            execPath.addProperty(EXEC_PATH_BRANCH_KEY, conn.branchIndex());
+            execPathArray.add(execPath);
+        }
+        root.add(EXEC_PATHS_KEY, execPathArray);
 
         return root;
     }

@@ -1,6 +1,7 @@
 package me.mp1282.visualtest.system.inbuilt;
 
 import me.mp1282.visualtest.system.executable.IExecutableTypeHolder;
+import me.mp1282.visualtest.system.inbuilt.special.BranchExecutable;
 import me.mp1282.visualtest.system.inbuilt.special.ConstantExecutable;
 import me.mp1282.visualtest.system.inbuilt.special.RangeCheckExecutable;
 
@@ -17,6 +18,7 @@ public class SpecialExecutableRepository implements IExecutableTypeHolder<Specia
         this.repository = new ArrayList<>();
         repository.add(new ConstantExecutable());
         repository.add(new RangeCheckExecutable());
+        repository.add(new BranchExecutable());
 
         /* Initialize all special executables */
         for (SpecialExecutable executable : repository) {

@@ -143,13 +143,20 @@ public class DiagramUi extends Pane {
         ui.setContextMenu(contextMenu);
 
         /* If the Executable that this node is wrapping has no outputs,
-         * add a MenuItem to specify the execution path.
+         * add a MenuItem for each execution path output.
          */
         if(ui.getNode().getExecutable().getNumberOfReturnValues() == 0) {
-            MenuItem executionPathItem = new MenuItem("Specify 'Execution Path'");
-            executionPathItem.setOnAction(_ -> connectionHelper.handleExecutionPathConnecting(ui, true));
+            int pathCount = ui.getNode().getExecutable().getExecutionPathOutputCount();
 
-            contextMenu.getItems().add(executionPathItem);
+            for (int i = 0; i < pathCount; i++) {
+                final int branchIndex = i;
+                String label = pathCount == 1
+                        ? "Specify 'Execution Path'"
+                        : "Specify Execution Path " + i;
+                MenuItem item = new MenuItem(label);
+                item.setOnAction(_ -> connectionHelper.handleExecutionPathConnecting(ui, true, branchIndex));
+                contextMenu.getItems().add(item);
+            }
         }
     }
 
@@ -333,8 +340,9 @@ public class DiagramUi extends Pane {
                 diagram.disconnectDataPort(lineUi.getOutput());
 
             } else if(ui instanceof ExecutionPathConnectorLineUi lineUi) {
-                /* Calling the disconnect logic on the source port will disconnect the target port too */
-                diagram.disconnectExecutionPath(lineUi.getSourceNodeUi().getNode());
+                diagram.disconnectExecutionPath(
+                        lineUi.getSourceNodeUi().getNode(),
+                        lineUi.getTargetNodeUi().getNode());
 
             }
         }

@@ -2,6 +2,7 @@ package me.mp1282.visualtest.ui.diagram.port;
 
 import javafx.scene.layout.Pane;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
+import me.mp1282.visualtest.system.diagram.port.ExecutionPath;
 import me.mp1282.visualtest.system.diagram.port.InputParameter;
 import me.mp1282.visualtest.system.diagram.port.OutputReturn;
 import me.mp1282.visualtest.ui.diagram.DiagramUi;
@@ -72,11 +73,13 @@ public class ConnectorHolderUi extends Pane {
             if(currentNodeUi == null) /* TODO: If this is null we have a serious problem */
                 throw new RuntimeException("DiagramNode does not have a DiagramNodeUi when rebuilding execution path! (A)");
 
-            /* Only need to create an execution path connector ui for each node after,
+            /* Only need to create an execution path connector ui for each "after" path,
              * because all nodes before that are connected will be connected to a node after.
              */
-            if(node.getNodeAfter().getOther() != null) {
-                createExecutionPathConnectorUi(nodeToUiMap.get(node.getNodeAfter().getOther()), currentNodeUi);
+            for (ExecutionPath afterPath : node.getNodeAfterPaths()) {
+                if (afterPath.getOther() != null) {
+                    createExecutionPathConnectorUi(nodeToUiMap.get(afterPath.getOther()), currentNodeUi);
+                }
             }
         }
     }

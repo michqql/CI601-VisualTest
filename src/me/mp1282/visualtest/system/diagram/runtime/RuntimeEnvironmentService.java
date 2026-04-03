@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class RuntimeEnvironmentService extends Thread implements IReset {
 
-    protected static final System.Logger RUNTIME_INFO_LOGGER = System.getLogger("DIAGRAM-RTI");
+    protected static final System.Logger RUNTIME_INFO_LOGGER = System.getLogger("DIAGRAM-RTE");
 
     private final BooleanProperty runningTask;
     private final LinkedList<ExecuteTask> tasks;

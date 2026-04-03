@@ -9,7 +9,7 @@ public class LoadedClass extends Identifiable {
 
     private final LoadedJar loadedJar;
     private final Class<?> clazz;
-    private final Collection<LoadedMethod> methods;
+    private final Collection<LoadedMethodExecutable> methods;
 
     /* Package-private: Only instantiable by LoadedJar */
     LoadedClass(LoadedJar loadedJar, Class<?> clazz) {
@@ -26,15 +26,15 @@ public class LoadedClass extends Identifiable {
         return clazz;
     }
 
-    public Collection<LoadedMethod> getMethods() {
+    public Collection<LoadedMethodExecutable> getMethods() {
         return methods;
     }
 
-    private Collection<LoadedMethod> findMethods() {
-        List<LoadedMethod> methods = new ArrayList<>();
+    private Collection<LoadedMethodExecutable> findMethods() {
+        List<LoadedMethodExecutable> methods = new ArrayList<>();
 
         for(Method method : clazz.getDeclaredMethods()) {
-            methods.add(new LoadedMethod(this, method));
+            methods.add(new LoadedMethodExecutable(this, method));
         }
 
         return Collections.unmodifiableCollection(methods);

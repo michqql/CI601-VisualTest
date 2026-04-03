@@ -2,15 +2,18 @@ package me.mp1282.visualtest.ui;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 import me.mp1282.visualtest.system.VisualTestSystem;
 import me.mp1282.visualtest.system.diagram.DiagramRepository;
 import me.mp1282.visualtest.system.jarload.LoadedJar;
 import me.mp1282.visualtest.system.jarload.LoadedJarRepository;
 import me.mp1282.visualtest.system.persistence.SaveResult;
+import me.mp1282.visualtest.ui.diagram.runtime.RuntimeUi;
 import me.mp1282.visualtest.ui.other.ToastUi;
 import me.mp1282.visualtest.ui.project.ProjectWindowUi;
 
@@ -22,9 +25,16 @@ public class MainMenuBarUi extends MenuBar {
     private final LoadedJarRepository jarRepository;
     private final DiagramRepository diagramRepository;
 
-    public MainMenuBarUi() {
+    private final Stage runtimeStage;
+
+    public MainMenuBarUi(Window window) {
         this.jarRepository = VisualTestSystem.getInstance().getJarRepository();
         this.diagramRepository = VisualTestSystem.getInstance().getDiagramRepository();
+
+        this.runtimeStage = new Stage();
+        runtimeStage.initOwner(window);
+        runtimeStage.setTitle("Runtime / Debugger");
+        runtimeStage.setScene(new Scene(new RuntimeUi()));
 
         /* Project MenuItem */
         Menu projectMenu = new Menu("Project");
@@ -53,7 +63,15 @@ public class MainMenuBarUi extends MenuBar {
                     createDiagramItem);
         }
 
-        getMenus().add(projectMenu);
+        Menu runtimeMenu = new Menu("Runtime");
+        {
+            MenuItem openRuntimeItem = new MenuItem("Open Window");
+            openRuntimeItem.setOnAction(this::onRuntimeClick);
+
+            runtimeMenu.getItems().add(openRuntimeItem);
+        }
+
+        getMenus().addAll(projectMenu, runtimeMenu);
     }
 
     private void onSave(ActionEvent event) {
@@ -137,5 +155,10 @@ public class MainMenuBarUi extends MenuBar {
         chooser.setInitialDirectory(new File(System.getProperty("user.dir")));
 
         return chooser.showDialog(getScene().getWindow());
+    }
+
+    private void onRuntimeClick(ActionEvent e) {
+        System.out.println("runtime click");
+        runtimeStage.show();
     }
 }

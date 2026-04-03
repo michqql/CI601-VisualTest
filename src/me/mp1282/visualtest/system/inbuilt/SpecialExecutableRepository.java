@@ -2,6 +2,7 @@ package me.mp1282.visualtest.system.inbuilt;
 
 import me.mp1282.visualtest.system.executable.IExecutableTypeHolder;
 import me.mp1282.visualtest.system.inbuilt.special.ConstantExecutable;
+import me.mp1282.visualtest.system.inbuilt.special.RangeCheckExecutable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,6 +16,7 @@ public class SpecialExecutableRepository implements IExecutableTypeHolder<Specia
     public SpecialExecutableRepository() {
         this.repository = new ArrayList<>();
         repository.add(new ConstantExecutable());
+        repository.add(new RangeCheckExecutable());
 
         /* Initialize all special executables */
         for (SpecialExecutable executable : repository) {

@@ -9,7 +9,7 @@ import me.mp1282.visualtest.util.Preconditions;
 import java.io.File;
 import java.util.Optional;
 
-public class LoadedJarRepository implements IReset, IExecutableTypeHolder<LoadedMethod> {
+public class LoadedJarRepository implements IReset, IExecutableTypeHolder<LoadedMethodExecutable> {
 
     private final ObservableList<LoadedJar> repository = FXCollections.observableArrayList();
 
@@ -44,7 +44,7 @@ public class LoadedJarRepository implements IReset, IExecutableTypeHolder<Loaded
     }
 
     @Override
-    public Optional<LoadedMethod> findExecutableByPersistenceId(String persistenceId) {
+    public Optional<LoadedMethodExecutable> findExecutableByPersistenceId(String persistenceId) {
         return Optional.empty();
     }
 

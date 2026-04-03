@@ -4,7 +4,7 @@ import me.mp1282.visualtest.system.diagram.Diagram;
 
 import java.lang.reflect.Field;
 
-public class DiagramTests {
+public class TestDiagram {
 
     /**
      * Test 1: testing the number of fields in the Diagram class

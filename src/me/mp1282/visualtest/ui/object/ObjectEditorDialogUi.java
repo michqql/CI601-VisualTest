@@ -92,7 +92,7 @@ public class ObjectEditorDialogUi extends Dialog<ObjectEditorDialogUi.Result> {
         /* Set ComboBox initial value to the initial object's type,
          * if its present in the types list
          */
-        if(types.contains(initialObject.getClass())) {
+        if(initialObject != null && types.contains(initialObject.getClass())) {
             comboBox.getSelectionModel().select(initialObject.getClass());
         }
 

@@ -107,8 +107,8 @@ public class DiagramUi extends Pane {
 
         getChildren().addAll(
                 gridCanvas,
-                nodeHolderUi,
                 connectorHolderUi,
+                nodeHolderUi,
                 connectionHelper.getDataPortConnectionLine(),
                 connectionHelper.getExecutionPathConnectionLine(),
                 infoUi

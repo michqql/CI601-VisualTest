@@ -9,7 +9,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
-public class InbuiltMethodRepository implements IReset, IExecutableTypeHolder<InbuiltMethod> {
+public class InbuiltMethodRepository implements IReset, IExecutableTypeHolder<InbuiltMethodExecutable> {
 
     private static final Set<Class<?>> CLASS_REGISTRY = new HashSet<>();
     /* Static constructor to add all classes that provide inbuilt functions
@@ -24,7 +24,7 @@ public class InbuiltMethodRepository implements IReset, IExecutableTypeHolder<In
         CLASS_REGISTRY.add(CollectionsInbuiltMethods.class);
     }
 
-    private final List<Pair<InbuiltFunctionProvider, List<InbuiltMethod>>> repository;
+    private final List<Pair<InbuiltFunctionProvider, List<InbuiltMethodExecutable>>> repository;
 
     public InbuiltMethodRepository() {
         this.repository = new ArrayList<>();
@@ -36,12 +36,12 @@ public class InbuiltMethodRepository implements IReset, IExecutableTypeHolder<In
                 continue;
             }
 
-            List<InbuiltMethod> methodList = new ArrayList<>();
+            List<InbuiltMethodExecutable> methodList = new ArrayList<>();
 
             for(Method method : clazz.getDeclaredMethods()) {
                 /* Only static methods should be considered inbuilt functions */
                 if(Modifier.isStatic(method.getModifiers())) {
-                    InbuiltMethod exe = new InbuiltMethod(annotation, method);
+                    InbuiltMethodExecutable exe = new InbuiltMethodExecutable(annotation, method);
                     exe.init(this);
                     methodList.add(exe);
                 }
@@ -51,7 +51,7 @@ public class InbuiltMethodRepository implements IReset, IExecutableTypeHolder<In
         }
     }
 
-    public List<Pair<InbuiltFunctionProvider, List<InbuiltMethod>>> getRepository() {
+    public List<Pair<InbuiltFunctionProvider, List<InbuiltMethodExecutable>>> getRepository() {
         return repository;
     }
 
@@ -61,9 +61,9 @@ public class InbuiltMethodRepository implements IReset, IExecutableTypeHolder<In
     }
 
     @Override
-    public Optional<InbuiltMethod> findExecutableByPersistenceId(String persistenceId) {
-        for(Pair<InbuiltFunctionProvider, List<InbuiltMethod>> pair : repository) {
-            for(InbuiltMethod method : pair.value()) {
+    public Optional<InbuiltMethodExecutable> findExecutableByPersistenceId(String persistenceId) {
+        for(Pair<InbuiltFunctionProvider, List<InbuiltMethodExecutable>> pair : repository) {
+            for(InbuiltMethodExecutable method : pair.value()) {
                 if(method.getPersistenceId().equals(persistenceId))
                     return Optional.of(method);
             }

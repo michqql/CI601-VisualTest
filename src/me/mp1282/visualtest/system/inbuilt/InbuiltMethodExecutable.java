@@ -4,10 +4,10 @@ import me.mp1282.visualtest.system.executable.MethodExecutable;
 
 import java.lang.reflect.Method;
 
-public class InbuiltMethod extends MethodExecutable {
+public class InbuiltMethodExecutable extends MethodExecutable {
 
     /* Package-private: Only instantiable by InbuiltMethodRepository */
-    InbuiltMethod(InbuiltFunctionProvider providerAnnotation, Method method) {
+    InbuiltMethodExecutable(InbuiltFunctionProvider providerAnnotation, Method method) {
         super(method);
     }
 }

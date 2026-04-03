@@ -160,18 +160,20 @@ public final class Diagram {
         return true;
     }
 
-    /* Check if two data ports can be connected together */
-    public boolean canConnectDataPorts(DiagramNode sourceNode, DiagramNode targetNode) {
-        /* Check to see if this connection would result in a cyclic dependency */
-        Set<DiagramNode> visitedNodes = new HashSet<>();
-        Queue<DiagramNode> nodesToVisit = new LinkedList<>();
-        nodesToVisit.add(targetNode);
+    /* Check if two data ports can be connected together by checking
+     * if a cyclic dependency would be created
+     */
+    public boolean canConnectDataPorts(DiagramNode sourceNode, DiagramNode destinationNode) {
+        Set<DiagramNode> visitedNodes = new HashSet<>();      /* The set of nodes already visited */
+        Queue<DiagramNode> nodesToVisit = new LinkedList<>(); /* FIFO queue of nodes to visit     */
+        nodesToVisit.add(destinationNode);                    /* Start at the destination node    */
         while(!nodesToVisit.isEmpty()) {
             DiagramNode currentNode = nodesToVisit.poll();
-            if(currentNode.equals(sourceNode)) {
-                /* Cycle detected */
-                return false;
-            }
+            /* If the source node can be reached (by being a node being processed
+             * from the queue of nodes) then a cycle would be created from source to destination
+             */
+            if(currentNode.equals(sourceNode))
+                return false; /* Cycle detected */
 
             visitedNodes.add(currentNode);
 

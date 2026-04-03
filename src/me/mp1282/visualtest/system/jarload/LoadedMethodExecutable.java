@@ -4,12 +4,12 @@ import me.mp1282.visualtest.system.executable.MethodExecutable;
 
 import java.lang.reflect.Method;
 
-public class LoadedMethod extends MethodExecutable {
+public class LoadedMethodExecutable extends MethodExecutable {
 
     private final LoadedClass loadedClass;
 
     /* Package-private: Only instantiable by LoadedClass */
-    LoadedMethod(LoadedClass loadedClass, Method method) {
+    LoadedMethodExecutable(LoadedClass loadedClass, Method method) {
         super(method);
         this.loadedClass = loadedClass;
     }

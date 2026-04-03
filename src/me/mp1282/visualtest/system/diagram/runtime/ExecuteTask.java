@@ -36,7 +36,9 @@ public class ExecuteTask {
         final Map<DiagramNode, Integer> indegree = new HashMap<>();
         final Queue<DiagramNode> next = new ArrayDeque<>();
 
-        /* 1. Calculate indegree by counting incoming data edges AND incoming execution path edges */
+        /* 1. Calculate indegree by counting incoming data edges
+         * AND incoming execution path edges
+         */
         for (DiagramNode node : nodes) {
             /* Incoming data edges */
             for (InputParameter input : node.getInputs()) {

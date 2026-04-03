@@ -5,8 +5,6 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.ObservableList;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.MenuItem;
 import javafx.scene.input.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -22,6 +20,7 @@ import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.diagram.port.*;
 import me.mp1282.visualtest.ui.event.DataPortMouseEvent;
 import me.mp1282.visualtest.ui.event.ExecutableBodyMouseEvent;
+import me.mp1282.visualtest.ui.event.ExecutionPathPortMouseEvent;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
 import me.mp1282.visualtest.util.*;
 
@@ -128,6 +127,8 @@ public class DiagramUi extends Pane {
 
         /* When a data port is clicked, call into the connection helper to handle connecting data ports */
         ui.addEventHandler(DataPortMouseEvent.CLICK, connectionHelper::onDataPortComponentClickEvent);
+        /* When an execution path port is clicked, call into the connection helper */
+        ui.addEventHandler(ExecutionPathPortMouseEvent.CLICK, connectionHelper::onExecutionPathPortClickEvent);
         /* Must use PRESSED over CLICK because:
          * When CLICK => Primary Mouse Button Down = false
          * When PRESS => Primary Mouse Button Down = true
@@ -138,26 +139,6 @@ public class DiagramUi extends Pane {
          * class already binds these properties to the DiagramNode properties.
          */
 
-        /* Context Menu */
-        ContextMenu contextMenu = new ContextMenu();
-        ui.setContextMenu(contextMenu);
-
-        /* If the Executable that this node is wrapping has no outputs,
-         * add a MenuItem for each execution path output.
-         */
-        if(ui.getNode().getExecutable().getNumberOfReturnValues() == 0) {
-            int pathCount = ui.getNode().getExecutable().getExecutionPathOutputCount();
-
-            for (int i = 0; i < pathCount; i++) {
-                final int branchIndex = i;
-                String label = pathCount == 1
-                        ? "Specify 'Execution Path'"
-                        : "Specify Execution Path " + i;
-                MenuItem item = new MenuItem(label);
-                item.setOnAction(_ -> connectionHelper.handleExecutionPathConnecting(ui, true, branchIndex));
-                contextMenu.getItems().add(item);
-            }
-        }
     }
 
     private void onDataPortConnectorUiAdd(DataPortConnectorLineUi connector) {
@@ -221,15 +202,7 @@ public class DiagramUi extends Pane {
 
         /* Checks if a diagram node was clicked */
         if(exeEvent.getSource() instanceof DiagramNodeUi ui) {
-            /* See if the execution path can be connected - ONLY if the primary mouse button was pressed */
-            if(wrappedMouseEvent.isPrimaryButtonDown() && connectionHelper.handleExecutionPathConnecting(ui, false)) {
-                exeEvent.consume();
-                return;
-            }
-
-            /* Perform last:
-             * Try to handle selecting a UI element - ONLY if the primary mouse button was pressed
-             */
+            /* Try to handle selecting a UI element - ONLY if the primary mouse button was pressed */
             if(wrappedMouseEvent.isPrimaryButtonDown())
                 selectionHelper.handleSelection(ui, wrappedMouseEvent.isShiftDown());
         }

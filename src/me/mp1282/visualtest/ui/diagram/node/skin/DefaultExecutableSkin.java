@@ -4,13 +4,17 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
+import javafx.util.Duration;
 import me.mp1282.visualtest.system.diagram.port.IDataPort;
+import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.diagram.node.skin.component.DataPortComponent;
+import me.mp1282.visualtest.ui.diagram.node.skin.component.ExecutionPathPortComponent;
 import me.mp1282.visualtest.ui.event.DataPortMouseEvent;
 import me.mp1282.visualtest.ui.event.ExecutableBodyMouseEvent;
 
@@ -25,17 +29,24 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
         final DiagramNodeUi nodeUi = getSkinnable();
         final VBox root = new VBox(); /* The root container */
 
-        final HBox inputs = new HBox(); /* Container for data port inputs */
-        inputs.setAlignment(Pos.CENTER);
+        final HBox inputs = new HBox(); /* Container for data port inputs and execution path IN port */
+        inputs.setAlignment(Pos.BOTTOM_CENTER);
         inputs.setSpacing(5);
+        /* Execution path IN port at the start of the inputs row */
+        inputs.getChildren().add(execPathPortNode(nodeUi.getNode().getExecutable(), -1));
         /* Populate input data ports */
         for(IDataPort<?> input : nodeUi.getNode().getInputs()) {
             inputs.getChildren().add(new DataPortComponent(this, input));
         }
 
-        final HBox outputs = new HBox(); /* Container for data port outputs */
-        outputs.setAlignment(Pos.CENTER);
+        final HBox outputs = new HBox(); /* Container for data port outputs and execution path OUT port(s) */
+        outputs.setAlignment(Pos.TOP_CENTER);
         outputs.setSpacing(5);
+        /* Execution path OUT port(s) at the end of the outputs row */
+        final Executable exe = nodeUi.getNode().getExecutable();
+        for (int i = 0; i < exe.getExecutionPathOutputCount(); i++)
+            outputs.getChildren().add(execPathPortNode(exe, i));
+
         /* Populate output data ports */
         for(IDataPort<?> output : nodeUi.getNode().getOutputs()) {
             outputs.getChildren().add(new DataPortComponent(this, output));
@@ -64,6 +75,37 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
 
         root.getChildren().addAll(inputs, main, outputs);
         return root;
+    }
+
+    /**
+     * Creates the UI node for an execution path port. If the executable provides a custom label
+     * for this port, it is shown as a persistent text label below the port triangle. Otherwise,
+     * a tooltip showing the default "IN" / "OUT" direction is added.
+     */
+    private Node execPathPortNode(Executable exe, int branchIndex) {
+        final ExecutionPathPortComponent port = new ExecutionPathPortComponent(this, branchIndex);
+        final String customLabel = exe.getExecutionPathLabel(branchIndex);
+
+        if (customLabel != null) {
+            final Text label = new Text(customLabel);
+            label.setStyle("-fx-font-size: 10;");
+            label.setMouseTransparent(true);
+            final VBox wrapper = new VBox(2);
+            if(branchIndex >= 0) { /* Output port */
+                wrapper.getChildren().addAll(label, port);
+            } else { /* Input port */
+                wrapper.getChildren().addAll(port, label);
+            }
+
+            wrapper.setAlignment(Pos.CENTER);
+            return wrapper;
+        } else {
+            final String defaultLabel = branchIndex < 0 ? "IN" : "OUT";
+            final Tooltip tooltip = new Tooltip(defaultLabel);
+            tooltip.setShowDelay(Duration.millis(300));
+            Tooltip.install(port, tooltip);
+            return port;
+        }
     }
 
     protected void createMainBody(StackPane parent) {

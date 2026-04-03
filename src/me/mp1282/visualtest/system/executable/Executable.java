@@ -121,6 +121,20 @@ public abstract class Executable {
     }
 
     /**
+     * Gets the display label for an execution path port.
+     * <p>
+     * Returns {@code null} by default, meaning the UI will show a generic "IN" / "OUT" label
+     * on hover. Override to provide a specific label (e.g. "TRUE" / "FALSE") that is always
+     * shown alongside the port.
+     *
+     * @param branchIndex {@code -1} for the incoming port; {@code >= 0} for an outgoing branch port.
+     * @return A short label string, or {@code null} if no custom label is needed.
+     */
+    public String getExecutionPathLabel(int branchIndex) {
+        return null;
+    }
+
+    /**
      * Gets the number of execution path outputs this executable exposes.
      * Most executables have one (sequential flow). A branch executable has two (true / false),
      * and a future switch executable could have arbitrarily many.

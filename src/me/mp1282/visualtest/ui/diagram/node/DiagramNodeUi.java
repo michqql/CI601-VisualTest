@@ -32,14 +32,16 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
     protected final ObjectProperty<IDataPort<?>> hoveredDataPort;
 
     protected final Map<IDataPort<?>, ObservableBounds> dataPortToAreaMap;
+    protected final Map<Integer, ObservableBounds> executionPathPortToAreaMap;
 
     public DiagramNodeUi(final DiagramNode node) {
-        this.node                = node;
-        this.selected            = new SimpleBooleanProperty();
-        this.width               = new SimpleDoubleProperty();
-        this.height              = new SimpleDoubleProperty();
-        this.hoveredDataPort     = new SimpleObjectProperty<>();
-        this.dataPortToAreaMap   = createDataPortToAreaMap(); /* Creates an unmodifiable map that is fully populated */
+        this.node                        = node;
+        this.selected                    = new SimpleBooleanProperty();
+        this.width                       = new SimpleDoubleProperty();
+        this.height                      = new SimpleDoubleProperty();
+        this.hoveredDataPort             = new SimpleObjectProperty<>();
+        this.dataPortToAreaMap           = createDataPortToAreaMap(); /* Creates an unmodifiable map that is fully populated */
+        this.executionPathPortToAreaMap  = createExecutionPathPortAreaMap();
 
         /* Bind the translation and dimension properties of this UI component
          * to the model (DiagramNode) so that changes are reflected.
@@ -74,6 +76,17 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
         return hoveredDataPort;
     }
 
+    public void setExecutionPathPortArea(int branchIndex, Bounds sceneBounds) {
+        if (getParent() == null)
+            return;
+        Bounds parentBounds = getParent().sceneToLocal(sceneBounds);
+        executionPathPortToAreaMap.get(branchIndex).rawBoundsProperty().set(parentBounds);
+    }
+
+    public ObservableBounds getExecutionPathPortAreaProperty(int branchIndex) {
+        return executionPathPortToAreaMap.get(branchIndex);
+    }
+
     public void setDataPortArea(IDataPort<?> dataPort, Bounds sceneBounds) {
         /* If this DiagramNodeUi does not have a parent - ignore this call */
         if(getParent() == null)
@@ -86,6 +99,15 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
 
     public ObservableBounds getDataPortAreaProperty(IDataPort<?> dataPort) {
         return dataPortToAreaMap.get(dataPort);
+    }
+
+    private Map<Integer, ObservableBounds> createExecutionPathPortAreaMap() {
+        Map<Integer, ObservableBounds> map = new HashMap<>();
+        map.put(-1, new ObservableBounds());
+        int outCount = node.getExecutable().getExecutionPathOutputCount();
+        for (int i = 0; i < outCount; i++)
+            map.put(i, new ObservableBounds());
+        return Collections.unmodifiableMap(map);
     }
 
     private Map<IDataPort<?>, ObservableBounds> createDataPortToAreaMap() {

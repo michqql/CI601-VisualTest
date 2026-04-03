@@ -3,7 +3,9 @@ package me.mp1282.visualtest.ui.diagram.node.skin.component;
 import javafx.geometry.Bounds;
 import javafx.scene.control.Control;
 import javafx.scene.control.SkinBase;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseEvent;
+import javafx.util.Duration;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
@@ -63,6 +65,10 @@ public class DataPortComponent extends StackPane {
          */
         layoutBoundsProperty         ().addListener((_, _, _) -> pushPositionToParent());
         localToSceneTransformProperty().addListener((_, _, _) -> pushPositionToParent());
+
+        final Tooltip tooltip = new Tooltip(dataPort.getType().getDataType().getSimpleName());
+        tooltip.setShowDelay(Duration.millis(300));
+        Tooltip.install(this, tooltip);
 
         getChildren().addAll(bg, fg);
     }

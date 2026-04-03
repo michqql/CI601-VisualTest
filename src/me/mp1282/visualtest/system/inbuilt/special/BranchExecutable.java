@@ -26,6 +26,15 @@ public class BranchExecutable extends SpecialExecutable {
     }
 
     @Override
+    public String getExecutionPathLabel(int branchIndex) {
+        return switch(branchIndex) {
+            case TRUE_BRANCH -> "TRUE";
+            case FALSE_BRANCH -> "FALSE";
+            default -> null;
+        };
+    }
+
+    @Override
     public int getExecutionPathOutputCount() {
         return 2;
     }

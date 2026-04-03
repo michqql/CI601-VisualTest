@@ -13,6 +13,7 @@ import me.mp1282.visualtest.ui.diagram.DiagramUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.diagram.port.ConnectorHolderUi;
 import me.mp1282.visualtest.ui.event.DataPortMouseEvent;
+import me.mp1282.visualtest.ui.event.ExecutionPathPortMouseEvent;
 import me.mp1282.visualtest.ui.other.ArrowLineUi;
 import me.mp1282.visualtest.util.MouseDelta;
 import me.mp1282.visualtest.util.ObservableBounds;
@@ -116,6 +117,31 @@ public class ConnectionHelper {
 
 
     /**
+     * Tries to handle connecting execution paths via port component click events.
+     *
+     * @param event The {@link ExecutionPathPortMouseEvent} fired when a port was clicked.
+     */
+    public void onExecutionPathPortClickEvent(ExecutionPathPortMouseEvent event) {
+        event.consume();
+
+        if (dataPortSource.get() != null)
+            return;
+
+        final DiagramNodeUi ui = event.getDiagramNodeUi();
+
+        if (event.isIncoming()) {
+            /* IN port clicked — complete a pending connection */
+            if (executionPathSourceNode.get() == null)
+                return;
+            handleExecutionPathConnecting(ui, false, pendingBranchIndex);
+        } else {
+            /* OUT port clicked — start (or restart) a connection */
+            executionPathSourceNode.set(null);
+            handleExecutionPathConnecting(ui, true, event.getBranchIndex());
+        }
+    }
+
+    /**
      * Tries to handle connecting the execution path of nodes using branch index 0.
      *
      * @param nodeUi The {@code me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi} that was clicked.
@@ -187,11 +213,10 @@ public class ConnectionHelper {
             dataPortConnectionLine.setEndY(pos.getY());
 
         } else if(executionPathNodeUi != null) {
-            final DiagramNode node = executionPathNodeUi.getNode();
-
-            /* Draw line between source node and mouse cursor */
-            executionPathConnectionLine.setStartX(executionPathNodeUi.getTranslateX() + node.xProperty().get() + (node.widthProperty().get() / 2));
-            executionPathConnectionLine.setStartY(executionPathNodeUi.getTranslateY() + node.yProperty().get() + (node.heightProperty().get() / 2));
+            /* Draw line between source OUT port and mouse cursor */
+            ObservableBounds portBounds = executionPathNodeUi.getExecutionPathPortAreaProperty(pendingBranchIndex);
+            executionPathConnectionLine.setStartX(portBounds.centerXProperty().get());
+            executionPathConnectionLine.setStartY(portBounds.centerYProperty().get());
             executionPathConnectionLine.setEndX  (pos.getX());
             executionPathConnectionLine.setEndY  (pos.getY());
         }

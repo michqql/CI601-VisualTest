@@ -3,14 +3,12 @@ package me.mp1282.visualtest.ui.diagram.port;
 import javafx.beans.property.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
-import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.ui.diagram.IDiagramElement;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.other.ArrowLineUi;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
-import me.mp1282.visualtest.util.PropertyHelper;
+import me.mp1282.visualtest.util.ObservableBounds;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 public class ExecutionPathConnectorLineUi extends ArrowLineUi implements IConnectorUi, ISelectableUi, IDiagramElement {
@@ -22,28 +20,26 @@ public class ExecutionPathConnectorLineUi extends ArrowLineUi implements IConnec
 
     private final DiagramNodeUi sourceNodeUi;
     private final DiagramNodeUi targetNodeUi;
+    private final int branchIndex;
 
     private final BooleanProperty selected;
 
     private Consumer<MouseEvent> mouseClickConsumer;
 
-    public ExecutionPathConnectorLineUi(DiagramNodeUi sourceNodeUi, DiagramNodeUi targetNodeUi) {
+    public ExecutionPathConnectorLineUi(DiagramNodeUi sourceNodeUi, int branchIndex, DiagramNodeUi targetNodeUi) {
         this.sourceNodeUi = sourceNodeUi;
         this.targetNodeUi = targetNodeUi;
+        this.branchIndex  = branchIndex;
 
         this.selected = new SimpleBooleanProperty();
 
-        final DiagramNode sourceNode = sourceNodeUi.getNode();
-        final DiagramNode targetNode = targetNodeUi.getNode();
-
-        /* When either of the nodes' positions change, recalculate the start and end positions */
-        PropertyHelper.addListenerForEach(
-                List.of(sourceNode.xProperty(), sourceNode.yProperty(), sourceNode.widthProperty(), sourceNode.heightProperty(),
-                        targetNode.xProperty(), targetNode.yProperty(), targetNode.widthProperty(), targetNode.heightProperty()),
-                _ -> recalculateStartAndEndPositions());
-
-        /* Calculate default start and end positions */
-        recalculateStartAndEndPositions();
+        /* Bind start/end positions to the execution path port areas on each node */
+        final ObservableBounds src = sourceNodeUi.getExecutionPathPortAreaProperty(branchIndex);
+        final ObservableBounds tgt = targetNodeUi.getExecutionPathPortAreaProperty(-1);
+        startXProperty().bind(src.centerXProperty());
+        startYProperty().bind(src.centerYProperty());
+        endXProperty()  .bind(tgt.centerXProperty());
+        endYProperty()  .bind(tgt.centerYProperty());
 
 //        hoverProperty().addListener((_, _, hovered) -> {
 //            setStrokeWidth(hovered ? HOVERED_WIDTH : DEFAULT_WIDTH);
@@ -53,6 +49,10 @@ public class ExecutionPathConnectorLineUi extends ArrowLineUi implements IConnec
 //        });
 
         selected.addListener((_, _, selected) -> setColour(selected ? SELECTED_COLOUR : DEFAULT_COLOUR));
+    }
+
+    public int getBranchIndex() {
+        return branchIndex;
     }
 
     public DiagramNodeUi getSourceNodeUi() {
@@ -66,13 +66,6 @@ public class ExecutionPathConnectorLineUi extends ArrowLineUi implements IConnec
     @Override
     public BooleanProperty selectedProperty() {
         return selected;
-    }
-
-    private void recalculateStartAndEndPositions() {
-        setStartX(sourceNodeUi.getNode().xProperty().get() + sourceNodeUi.getNode().widthProperty ().get() / 2D);
-        setStartY(sourceNodeUi.getNode().yProperty().get() + sourceNodeUi.getNode().heightProperty().get() / 2D);
-        setEndX  (targetNodeUi.getNode().xProperty().get() + targetNodeUi.getNode().widthProperty ().get() / 2D);
-        setEndY  (targetNodeUi.getNode().yProperty().get() + targetNodeUi.getNode().heightProperty().get() / 2D);
     }
 
     @Override

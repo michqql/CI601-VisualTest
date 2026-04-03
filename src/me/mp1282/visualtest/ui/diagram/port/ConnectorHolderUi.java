@@ -10,8 +10,7 @@ import me.mp1282.visualtest.ui.diagram.node.DiagramNodeHolderUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.util.ReadOnlyMap;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 import java.util.function.Consumer;
 
 /** ConnectorHolderUi is a dedicated UI element to only hold IConnectorUi elements.
@@ -65,8 +64,6 @@ public class ConnectorHolderUi extends Pane {
 
     private void rebuildExecutionPathConnectors() {
         final ReadOnlyMap<DiagramNode, DiagramNodeUi> nodeToUiMap = nodeHolderUi.getNodeToUiMap();
-        final Set<DiagramNode> visited = new HashSet<>(); /* The set of visited nodes */
-
         /* Loop over each DiagramNode in the Diagram */
         for (DiagramNode node : diagramUi.getDiagram().nodesProperty()) {
             final DiagramNodeUi currentNodeUi = nodeToUiMap.get(node);
@@ -76,9 +73,10 @@ public class ConnectorHolderUi extends Pane {
             /* Only need to create an execution path connector ui for each "after" path,
              * because all nodes before that are connected will be connected to a node after.
              */
-            for (ExecutionPath afterPath : node.getNodeAfterPaths()) {
-                if (afterPath.getOther() != null) {
-                    createExecutionPathConnectorUi(currentNodeUi, nodeToUiMap.get(afterPath.getOther()));
+            final List<ExecutionPath> afterPaths = node.getNodeAfterPaths();
+            for (int i = 0; i < afterPaths.size(); i++) {
+                if (afterPaths.get(i).getOther() != null) {
+                    createExecutionPathConnectorUi(currentNodeUi, i, nodeToUiMap.get(afterPaths.get(i).getOther()));
                 }
             }
         }
@@ -96,8 +94,8 @@ public class ConnectorHolderUi extends Pane {
         getChildren().add(connector);
     }
 
-    private void createExecutionPathConnectorUi(DiagramNodeUi source, DiagramNodeUi target) {
-        final ExecutionPathConnectorLineUi connector = new ExecutionPathConnectorLineUi(source, target);
+    private void createExecutionPathConnectorUi(DiagramNodeUi source, int branchIndex, DiagramNodeUi target) {
+        final ExecutionPathConnectorLineUi connector = new ExecutionPathConnectorLineUi(source, branchIndex, target);
 
         if(onExecutionPathConnectorAdd != null)
             onExecutionPathConnectorAdd.accept(connector);

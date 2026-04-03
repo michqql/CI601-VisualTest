@@ -38,7 +38,7 @@ public class ExecutionPathPortComponent extends StackPane {
         bg.hoverProperty().addListener((_, _, hover) ->
                 bg.setStroke(hover ? STROKE_VISIBLE : STROKE_HIDDEN));
 
-        /* Triangle indicator: pointing UP for IN ports, pointing DOWN for OUT ports */
+        /* Triangle indicator: always pointing down for both IN and OUT ports */
         final Polygon fg = new Polygon(
                 PAD, PAD,
                 SIDE_LENGTH - PAD, PAD,

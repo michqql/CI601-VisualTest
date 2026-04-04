@@ -4,12 +4,10 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.SkinBase;
-import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
-import javafx.util.Duration;
 import me.mp1282.visualtest.system.diagram.port.IDataPort;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
@@ -28,6 +26,8 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
     protected Node createRoot() {
         final DiagramNodeUi nodeUi = getSkinnable();
         final VBox root = new VBox(); /* The root container */
+        root.setBorder(new Border(new BorderStroke(
+                Color.BLACK, BorderStrokeStyle.DOTTED, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
 
         final HBox inputs = new HBox(); /* Container for data port inputs and execution path IN port */
         inputs.setAlignment(Pos.BOTTOM_CENTER);
@@ -36,7 +36,7 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
         inputs.getChildren().add(execPathPortNode(nodeUi.getNode().getExecutable(), -1));
         /* Populate input data ports */
         for(IDataPort<?> input : nodeUi.getNode().getInputs()) {
-            inputs.getChildren().add(new DataPortComponent(this, input));
+            inputs.getChildren().add(dataPortNode(input, true));
         }
 
         final HBox outputs = new HBox(); /* Container for data port outputs and execution path OUT port(s) */
@@ -49,7 +49,7 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
 
         /* Populate output data ports */
         for(IDataPort<?> output : nodeUi.getNode().getOutputs()) {
-            outputs.getChildren().add(new DataPortComponent(this, output));
+            outputs.getChildren().add(dataPortNode(output, false));
         }
 
         /* Construct the main content */
@@ -79,8 +79,8 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
 
     /**
      * Creates the UI node for an execution path port. If the executable provides a custom label
-     * for this port, it is shown as a persistent text label below the port triangle. Otherwise,
-     * a tooltip showing the default "IN" / "OUT" direction is added.
+     * for this port, it is shown as a persistent text label. Otherwise, a hover-visible text
+     * label showing "IN" or "OUT" is displayed when the node is hovered.
      */
     private Node execPathPortNode(Executable exe, int branchIndex) {
         final ExecutionPathPortComponent port = new ExecutionPathPortComponent(this, branchIndex);
@@ -101,11 +101,35 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
             return wrapper;
         } else {
             final String defaultLabel = branchIndex < 0 ? "IN" : "OUT";
-            final Tooltip tooltip = new Tooltip(defaultLabel);
-            tooltip.setShowDelay(Duration.millis(300));
-            Tooltip.install(port, tooltip);
-            return port;
+            final Text label = new Text(defaultLabel);
+            label.setStyle("-fx-font-size: 10;");
+            label.setMouseTransparent(true);
+            label.visibleProperty().bind(getSkinnable().hoverProperty());
+            final VBox wrapper = new VBox(2);
+            if (branchIndex >= 0) {
+                wrapper.getChildren().addAll(label, port);
+            } else {
+                wrapper.getChildren().addAll(port, label);
+            }
+            wrapper.setAlignment(Pos.CENTER);
+            return wrapper;
         }
+    }
+
+    private Node dataPortNode(IDataPort<?> port, boolean isInput) {
+        final DataPortComponent portComp = new DataPortComponent(this, port);
+        final Text label = new Text(port.getType().getDataType().getSimpleName());
+        label.setStyle("-fx-font-size: 10;");
+        label.setMouseTransparent(true);
+        label.visibleProperty().bind(getSkinnable().hoverProperty());
+        final VBox wrapper = new VBox(2);
+        if (isInput) {
+            wrapper.getChildren().addAll(portComp, label);
+        } else {
+            wrapper.getChildren().addAll(label, portComp);
+        }
+        wrapper.setAlignment(Pos.CENTER);
+        return wrapper;
     }
 
     protected void createMainBody(StackPane parent) {

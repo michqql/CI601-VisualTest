@@ -2,18 +2,18 @@ package me.mp1282.visualtest.ui;
 
 import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
-import javafx.stage.Stage;
 import javafx.stage.Window;
 import me.mp1282.visualtest.system.VisualTestSystem;
+import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.DiagramRepository;
+import me.mp1282.visualtest.system.diagram.runtime.ExecuteTask;
+import me.mp1282.visualtest.system.diagram.runtime.RuntimeEnvironmentService;
 import me.mp1282.visualtest.system.jarload.LoadedJar;
 import me.mp1282.visualtest.system.jarload.LoadedJarRepository;
 import me.mp1282.visualtest.system.persistence.SaveResult;
-import me.mp1282.visualtest.ui.diagram.runtime.RuntimeUi;
 import me.mp1282.visualtest.ui.other.ToastUi;
 import me.mp1282.visualtest.ui.project.ProjectWindowUi;
 
@@ -24,17 +24,12 @@ public class MainMenuBarUi extends MenuBar {
 
     private final LoadedJarRepository jarRepository;
     private final DiagramRepository diagramRepository;
-
-    private final Stage runtimeStage;
+    private final RuntimeEnvironmentService runtime;
 
     public MainMenuBarUi(Window window) {
         this.jarRepository = VisualTestSystem.getInstance().getJarRepository();
         this.diagramRepository = VisualTestSystem.getInstance().getDiagramRepository();
-
-        this.runtimeStage = new Stage();
-        runtimeStage.initOwner(window);
-        runtimeStage.setTitle("Runtime / Debugger");
-        runtimeStage.setScene(new Scene(new RuntimeUi()));
+        this.runtime = VisualTestSystem.getInstance().getRuntimeEnvironmentService();
 
         /* Project MenuItem */
         Menu projectMenu = new Menu("Project");
@@ -63,15 +58,31 @@ public class MainMenuBarUi extends MenuBar {
                     createDiagramItem);
         }
 
-        Menu runtimeMenu = new Menu("Runtime");
+        Menu runMenu = new Menu("Run");
         {
-            MenuItem openRuntimeItem = new MenuItem("Open Window");
-            openRuntimeItem.setOnAction(this::onRuntimeClick);
+            MenuItem runItem = new MenuItem("Run Diagram");
+            runItem.setOnAction(_ -> handleRun());
+            runItem.disableProperty().bind(
+                    diagramRepository.selectedDiagramProperty().isNull()
+                            .or(runtime.runningTaskProperty()));
 
-            runtimeMenu.getItems().add(openRuntimeItem);
+            CheckMenuItem debugItem = new CheckMenuItem("Debug (Step Mode)");
+            debugItem.selectedProperty().bindBidirectional(runtime.stepModeProperty());
+
+            MenuItem stepItem = new MenuItem("Step");
+            stepItem.setOnAction(_ -> runtime.setStepFlag());
+            stepItem.disableProperty().bind(
+                    debugItem.selectedProperty().not()
+                            .or(runtime.runningTaskProperty().not()));
+
+            MenuItem stopItem = new MenuItem("Stop");
+            stopItem.setOnAction(_ -> handleStop());
+            stopItem.disableProperty().bind(runtime.runningTaskProperty().not());
+
+            runMenu.getItems().addAll(runItem, new SeparatorMenuItem(), debugItem, stepItem, new SeparatorMenuItem(), stopItem);
         }
 
-        getMenus().addAll(projectMenu, runtimeMenu);
+        getMenus().addAll(projectMenu, runMenu);
     }
 
     private void onSave(ActionEvent event) {
@@ -157,8 +168,13 @@ public class MainMenuBarUi extends MenuBar {
         return chooser.showDialog(getScene().getWindow());
     }
 
-    private void onRuntimeClick(ActionEvent e) {
-        System.out.println("runtime click");
-        runtimeStage.show();
+    private void handleRun() {
+        Diagram diagram = diagramRepository.selectedDiagramProperty().get();
+        if (diagram != null)
+            runtime.queueTask(new ExecuteTask(diagram));
+    }
+
+    private void handleStop() {
+        runtime.stopCurrentTask();
     }
 }

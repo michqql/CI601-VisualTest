@@ -1,5 +1,6 @@
 package me.mp1282.visualtest.system.diagram.runtime;
 
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -37,6 +38,7 @@ public class RuntimeEnvironmentService extends Thread implements IReset {
     /* Thread safety variables */
     private final BooleanProperty runningTaskThreadSafe;
     private final ObservableList<RunStep> runStepListThreadSafe;
+    private final ObjectProperty<ExecuteTask> lastCompletedTaskThreadSafe;
 
     public RuntimeEnvironmentService() {
         this.runningTask = new SimpleBooleanProperty();
@@ -52,6 +54,7 @@ public class RuntimeEnvironmentService extends Thread implements IReset {
 
         this.runningTaskThreadSafe = new SimpleBooleanProperty();
         this.runStepListThreadSafe = FXCollections.observableArrayList();
+        this.lastCompletedTaskThreadSafe = new SimpleObjectProperty<>();
 
         runningTask.bind(currentTask.isNotNull());
         PropertyHelper.addListenerThreadSafe(runningTask, runningTaskThreadSafe::set);
@@ -77,6 +80,21 @@ public class RuntimeEnvironmentService extends Thread implements IReset {
         return runStepListThreadSafe;
     }
 
+    public ObjectProperty<ExecuteTask> lastCompletedTaskProperty() {
+        return lastCompletedTaskThreadSafe;
+    }
+
+    public void stopCurrentTask() {
+        try {
+            lock.lock();
+            tasks.clear();
+            currentTask.set(null);
+            runStepList.clear();
+        } finally {
+            lock.unlock();
+        }
+    }
+
     @Override
     public void run() {
         System.out.println("Diagram Runtime Environment starting...");
@@ -95,7 +113,9 @@ public class RuntimeEnvironmentService extends Thread implements IReset {
                         if(!stepMode.get() || stepFlag.getAndSet(false))
                             runStepList.add(currentTask.step(RUNTIME_INFO_LOGGER));
                     } else {
+                        final ExecuteTask completed = currentTask;
                         this.currentTask.set(null); /* Task completed */
+                        Platform.runLater(() -> lastCompletedTaskThreadSafe.set(completed));
                     }
 
                 } else if (!tasks.isEmpty()) { /* Fetch next task from queue */

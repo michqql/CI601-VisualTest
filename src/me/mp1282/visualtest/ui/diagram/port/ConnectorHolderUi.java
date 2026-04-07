@@ -1,16 +1,19 @@
 package me.mp1282.visualtest.ui.diagram.port;
 
+import javafx.scene.Node;
 import javafx.scene.layout.Pane;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.diagram.port.ExecutionPath;
 import me.mp1282.visualtest.system.diagram.port.InputParameter;
 import me.mp1282.visualtest.system.diagram.port.OutputReturn;
+import me.mp1282.visualtest.system.diagram.runtime.ExecuteTask;
 import me.mp1282.visualtest.ui.diagram.DiagramUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeHolderUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.util.ReadOnlyMap;
 
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /** ConnectorHolderUi is a dedicated UI element to only hold IConnectorUi elements.
@@ -92,6 +95,26 @@ public class ConnectorHolderUi extends Pane {
             onDataPortConnectorAdd.accept(connector);
 
         getChildren().add(connector);
+    }
+
+    public void applyExecutionPathStates(ExecuteTask task) {
+        Set<DiagramNode> skipped = task.getSkippedNodes();
+        for (Node child : getChildren()) {
+            if (child instanceof ExecutionPathConnectorLineUi line) {
+                DiagramNode target = line.getTargetNodeUi().getNode();
+                boolean isSkipped = skipped.contains(target);
+                line.setPathState(isSkipped
+                        ? ExecutionPathConnectorLineUi.PathState.SKIPPED
+                        : ExecutionPathConnectorLineUi.PathState.TAKEN);
+            }
+        }
+    }
+
+    public void clearExecutionPathStates() {
+        for (Node child : getChildren()) {
+            if (child instanceof ExecutionPathConnectorLineUi line)
+                line.setPathState(ExecutionPathConnectorLineUi.PathState.NEUTRAL);
+        }
     }
 
     private void createExecutionPathConnectorUi(DiagramNodeUi source, int branchIndex, DiagramNodeUi target) {

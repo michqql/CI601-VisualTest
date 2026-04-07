@@ -1,5 +1,6 @@
 package me.mp1282.visualtest.ui.diagram.tab;
 
+import javafx.geometry.Orientation;
 import javafx.scene.control.*;
 import me.mp1282.visualtest.system.VisualTestSystem;
 import me.mp1282.visualtest.system.diagram.Diagram;
@@ -9,6 +10,8 @@ import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.event.EventBus;
 import me.mp1282.visualtest.system.event.types.DiagramSelectedEvent;
 import me.mp1282.visualtest.ui.diagram.DiagramUi;
+import me.mp1282.visualtest.ui.diagram.runtime.DiagramExecutionContext;
+import me.mp1282.visualtest.ui.diagram.runtime.DiagramRunResultsUi;
 
 public class DiagramTabUi extends Tab {
 
@@ -16,17 +19,34 @@ public class DiagramTabUi extends Tab {
 
     private final DiagramRepository diagramRepository;
     private final Diagram diagram;
+    private final DiagramUi diagramUi;
+    private final DiagramExecutionContext executionContext;
 
     private final Label unsavedIndicator;
 
     public DiagramTabUi(Diagram diagram, DiagramUi ui) {
-        super(diagram.nameProperty().get(), ui);
+        super(diagram.nameProperty().get());
         setUserData(diagram);
 
         this.diagramRepository = VisualTestSystem.getInstance().getDiagramRepository();
         this.diagram = diagram;
+        this.diagramUi = ui;
+        this.executionContext = new DiagramExecutionContext(
+                diagram, VisualTestSystem.getInstance().getRuntimeEnvironmentService());
 
         this.unsavedIndicator = new Label("*");
+
+        /* Build the embedded layout: canvas on top, results panel below */
+        DiagramRunResultsUi resultsPanel = new DiagramRunResultsUi(executionContext);
+        SplitPane verticalSplit = new SplitPane(ui, resultsPanel);
+        verticalSplit.setOrientation(Orientation.VERTICAL);
+        verticalSplit.setDividerPositions(0.75);
+        setContent(verticalSplit);
+
+        /* Apply execution overlay when a task for this diagram completes */
+        executionContext.lastCompletedTaskProperty().addListener((_, _, task) -> {
+            if (task != null) ui.applyExecutionResult(task);
+        });
 
         createContextMenu();
 

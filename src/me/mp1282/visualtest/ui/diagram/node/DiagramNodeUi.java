@@ -27,6 +27,7 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
 
     /* Properties */
     protected final BooleanProperty              selected;
+    protected final BooleanProperty              skipped;
     protected final DoubleProperty               width;
     protected final DoubleProperty               height;
     protected final ObjectProperty<IDataPort<?>> hoveredDataPort;
@@ -39,6 +40,7 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
     public DiagramNodeUi(final DiagramNode node) {
         this.node                        = node;
         this.selected                    = new SimpleBooleanProperty();
+        this.skipped                     = new SimpleBooleanProperty();
         this.width                       = new SimpleDoubleProperty();
         this.height                      = new SimpleDoubleProperty();
         this.hoveredDataPort             = new SimpleObjectProperty<>();
@@ -72,6 +74,14 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
     @Override
     public BooleanProperty selectedProperty() {
         return selected;
+    }
+
+    public BooleanProperty skippedProperty() {
+        return skipped;
+    }
+
+    public void setSkipped(boolean value) {
+        skipped.set(value);
     }
 
     public ObjectProperty<IDataPort<?>> hoveredDataPortProperty() {

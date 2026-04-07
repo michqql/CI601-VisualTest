@@ -18,12 +18,14 @@ public class ExecuteTask {
     private final List<DiagramNode> executionOrder;
     private final Map<IDataPort<ParameterType>, Object> inputPortToDataMap;
     private final Set<DiagramNode> skippedNodes;
+    private final Map<OutputReturn, Object> outputPortToLastValueMap;
 
     public ExecuteTask(Diagram diagram) {
         this.diagram          = diagram;
         this.executionOrder   = new ArrayList<>();
         this.inputPortToDataMap = new HashMap<>();
         this.skippedNodes     = new HashSet<>();
+        this.outputPortToLastValueMap = new HashMap<>();
 
         createExecutionOrder();
     }
@@ -87,8 +89,20 @@ public class ExecuteTask {
             throw new RuntimeException("Cycle detected");
     }
 
+    public Diagram getDiagram() {
+        return diagram;
+    }
+
     public List<DiagramNode> getExecutionOrder() {
         return executionOrder;
+    }
+
+    public Set<DiagramNode> getSkippedNodes() {
+        return Collections.unmodifiableSet(skippedNodes);
+    }
+
+    public Object getOutputPortValue(OutputReturn port) {
+        return outputPortToLastValueMap.get(port);
     }
 
     public boolean canStep() {
@@ -127,6 +141,8 @@ public class ExecuteTask {
         /* Execute this node */
         log.log(System.Logger.Level.INFO, "Executing: " + exe.getName());
         exe.execute(inputs, outputs, currentNode.getData());
+        result.setInputs(inputs);
+        result.setOutputs(outputs);
 
         /* ForLoop: execute body nodes inline N times instead of the normal path */
         if (exe instanceof ForLoopExecutable) {
@@ -140,6 +156,7 @@ public class ExecuteTask {
             log.log(System.Logger.Level.INFO, "Output: " + output);
             IDataPort<ParameterType> nextInput = outputPort.getTo();
 
+            outputPortToLastValueMap.put(outputPort, output);
             inputPortToDataMap.put(nextInput, output);
         }
 

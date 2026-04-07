@@ -13,7 +13,11 @@ import java.util.function.Consumer;
 
 public class ExecutionPathConnectorLineUi extends ArrowLineUi implements IConnectorUi, ISelectableUi, IDiagramElement {
 
+    public enum PathState { NEUTRAL, TAKEN, SKIPPED }
+
     private static final Color DEFAULT_COLOUR  = Color.BLACK;
+    private static final Color TAKEN_COLOUR    = Color.web("#00CC44");
+    private static final Color SKIPPED_COLOUR  = Color.color(0.7, 0.7, 0.7, 0.5);
     private static final Color SELECTED_COLOUR = Color.RED;
     private static final int DEFAULT_WIDTH = 5;
     private static final int HOVERED_WIDTH = 10;
@@ -23,6 +27,7 @@ public class ExecutionPathConnectorLineUi extends ArrowLineUi implements IConnec
     private final int branchIndex;
 
     private final BooleanProperty selected;
+    private PathState pathState = PathState.NEUTRAL;
 
     private Consumer<MouseEvent> mouseClickConsumer;
 
@@ -48,7 +53,24 @@ public class ExecutionPathConnectorLineUi extends ArrowLineUi implements IConnec
 //            targetNodeUi.hoveredDataPortProperty().set(hovered ? targetPort : null);
 //        });
 
-        selected.addListener((_, _, selected) -> setColour(selected ? SELECTED_COLOUR : DEFAULT_COLOUR));
+        selected.addListener((_, _, _) -> updateColour());
+    }
+
+    public void setPathState(PathState state) {
+        this.pathState = state;
+        updateColour();
+    }
+
+    private void updateColour() {
+        if (selected.get()) {
+            setColour(SELECTED_COLOUR);
+        } else if (pathState == PathState.TAKEN) {
+            setColour(TAKEN_COLOUR);
+        } else if (pathState == PathState.SKIPPED) {
+            setColour(SKIPPED_COLOUR);
+        } else {
+            setColour(DEFAULT_COLOUR);
+        }
     }
 
     public int getBranchIndex() {

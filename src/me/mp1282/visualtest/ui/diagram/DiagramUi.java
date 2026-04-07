@@ -10,6 +10,7 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
+import me.mp1282.visualtest.system.diagram.runtime.ExecuteTask;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.ui.diagram.helper.ConnectionHelper;
 import me.mp1282.visualtest.ui.diagram.helper.KeyboardHelper;
@@ -44,6 +45,7 @@ public class DiagramUi extends Pane {
     /* Child UI element variables (nodes & connectors) */
     private final DiagramNodeHolderUi nodeHolderUi;
     private final ConnectorHolderUi connectorHolderUi;
+    private final DiagramExecutionOverlayUi overlayUi;
 
     public DiagramUi(final Diagram diagram) {
         this.diagram = diagram;
@@ -61,6 +63,7 @@ public class DiagramUi extends Pane {
                 this::onDiagramNodeUiAdd, null);
         this.connectorHolderUi = new ConnectorHolderUi(this, nodeHolderUi,
                 this::onDataPortConnectorUiAdd, this::onExecutionPathConnectorUiAdd);
+        this.overlayUi = new DiagramExecutionOverlayUi();
 
         connectionHelper.setConnectorHolderUi(connectorHolderUi);
 
@@ -110,7 +113,8 @@ public class DiagramUi extends Pane {
                 nodeHolderUi,
                 connectionHelper.getDataPortConnectionLine(),
                 connectionHelper.getExecutionPathConnectionLine(),
-                infoUi
+                infoUi,
+                overlayUi
         );
 
         /* Must rebuild connectors from the start in case the diagram was loaded with connections */
@@ -278,6 +282,16 @@ public class DiagramUi extends Pane {
                 System.err.println("Error: Dragged object is not an Executable");
             }
         }
+    }
+
+    public void applyExecutionResult(ExecuteTask task) {
+        connectorHolderUi.applyExecutionPathStates(task);
+        overlayUi.applyExecutionResult(task, nodeHolderUi);
+    }
+
+    public void clearExecutionResult() {
+        connectorHolderUi.clearExecutionPathStates();
+        overlayUi.clearOverlay();
     }
 
     private void redrawGridCanvas() {

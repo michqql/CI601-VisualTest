@@ -18,19 +18,23 @@ import me.mp1282.visualtest.ui.event.ExecutableBodyMouseEvent;
 
 public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
 
+    private Node skinRoot;
+
     public DefaultExecutableSkin(DiagramNodeUi nodeUi) {
         super(nodeUi);
-        getChildren().add(createRoot());
+        skinRoot = createRoot();
+        getChildren().add(skinRoot);
     }
 
     /**
-     * SkinBase.dispose() is a no-op by default, so the old skin's children would
-     * otherwise remain in the control's children list after setSkin() is called,
-     * causing stale port components to remain visible.
+     * Only removes the root node that THIS skin instance added.
+     * Using getChildren().clear() would also wipe any children already added by the
+     * incoming skin when refreshExecutionPaths() pre-constructs it before calling setSkin().
      */
     @Override
     public void dispose() {
-        getChildren().clear();
+        getChildren().remove(skinRoot);
+        skinRoot = null;
         super.dispose();
     }
 
@@ -87,6 +91,7 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
         });
 
         root.getChildren().addAll(inputs, main, outputs);
+        root.opacityProperty().bind(nodeUi.skippedProperty().map(s -> s ? 0.35 : 1.0));
         return root;
     }
 

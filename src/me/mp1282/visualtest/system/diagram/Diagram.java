@@ -3,6 +3,7 @@ package me.mp1282.visualtest.system.diagram;
 import javafx.beans.InvalidationListener;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.diagram.port.ExecutionPath;
 import me.mp1282.visualtest.system.diagram.port.IDataPort;
@@ -15,6 +16,7 @@ import java.util.*;
 public final class Diagram {
 
     private final BooleanProperty unsaved;
+    private final Map<DiagramNode, InvalidationListener> nodeListeners = new HashMap<>();
 
     /* Basic information */
     private final ReadOnlyListWrapper<DiagramNode> nodes;
@@ -32,10 +34,16 @@ public final class Diagram {
         this.translateY    = new SimpleDoubleProperty();
 
         /* When a property value changes, mark the diagram as unsaved */
-        nodes     .addListener((InvalidationListener) _ -> unsaved.set(true));
-        name      .addListener((_, _, _)                -> unsaved.set(true));
-        translateX.addListener((_, _, _)                -> unsaved.set(true));
-        translateY.addListener((_, _, _)                -> unsaved.set(true));
+        nodes.addListener((ListChangeListener<DiagramNode>) change -> {
+            unsaved.set(true);
+            while (change.next()) {
+                change.getAddedSubList().forEach(this::watchNode);
+                change.getRemoved().forEach(this::unwatchNode);
+            }
+        });
+        name      .addListener((_, _, _) -> unsaved.set(true));
+        translateX.addListener((_, _, _) -> unsaved.set(true));
+        translateY.addListener((_, _, _) -> unsaved.set(true));
     }
 
     public BooleanProperty unsavedProperty() {
@@ -99,6 +107,7 @@ public final class Diagram {
         if(canConnectExecutionPath(source, target) && canConnectDataPorts(source, target)) {
             source.getNodeAfterPath(branchIndex).setOther(target);
             target.getNodeBefore().setOther(source);
+            unsaved.set(true);
             return true;
         }
         return false;
@@ -113,6 +122,7 @@ public final class Diagram {
             if (afterPath.getOther() == target) {
                 afterPath.setOther(null);
                 target.getNodeBefore().setOther(null);
+                unsaved.set(true);
                 return;
             }
         }
@@ -150,6 +160,7 @@ public final class Diagram {
                 canConnectDataPorts(output.getParentNode(), input.getParentNode())) {
             output.setTo(input);
             input.setFrom(output);
+            unsaved.set(true);
             return true;
         }
         return false;
@@ -160,6 +171,7 @@ public final class Diagram {
         if(dataPort.getOther() != null)
             dataPort.getOther().disconnect();
         dataPort.disconnect();
+        unsaved.set(true);
     }
 
     /* Check if connecting source → target via an execution path would create a cycle */
@@ -226,6 +238,21 @@ public final class Diagram {
 
         /* No cycle was detected, this connection is valid */
         return true;
+    }
+
+    private void watchNode(DiagramNode node) {
+        InvalidationListener listener = _ -> unsaved.set(true);
+        nodeListeners.put(node, listener);
+        node.xProperty().addListener(listener);
+        node.yProperty().addListener(listener);
+        node.getData().addInvalidationListener(listener);
+    }
+
+    private void unwatchNode(DiagramNode node) {
+        InvalidationListener listener = nodeListeners.remove(node);
+        if (listener == null) return;
+        node.xProperty().removeListener(listener);
+        node.yProperty().removeListener(listener);
     }
 
     public DiagramNode getDiagramNodeByUniqueId(UUID uuid) {

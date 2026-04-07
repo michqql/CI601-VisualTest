@@ -1,5 +1,6 @@
 package me.mp1282.visualtest.system.diagram.node.data;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 
@@ -9,5 +10,10 @@ public class ConstantNodeData extends NodeData {
 
     public ObjectProperty<Object> constantProperty() {
         return constant;
+    }
+
+    @Override
+    public void addInvalidationListener(InvalidationListener listener) {
+        constant.addListener(listener);
     }
 }

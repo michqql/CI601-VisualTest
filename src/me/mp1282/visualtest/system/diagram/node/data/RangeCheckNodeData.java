@@ -1,5 +1,6 @@
 package me.mp1282.visualtest.system.diagram.node.data;
 
+import javafx.beans.InvalidationListener;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 
@@ -19,5 +20,12 @@ public class RangeCheckNodeData extends NodeData {
 
     public ObjectProperty<Number> maxProperty() {
         return max;
+    }
+
+    @Override
+    public void addInvalidationListener(InvalidationListener listener) {
+        type.addListener(listener);
+        min.addListener(listener);
+        max.addListener(listener);
     }
 }

@@ -98,6 +98,7 @@ public class PersistenceService implements IReset {
             try(FileWriter writer = new FileWriter(new File(diagramsDir, String.format(DIAGRAM_FILENAME_FORMAT, diagram.nameProperty().get())))) {
                 gson.toJson(diagram, writer);
             }
+            diagram.unsavedProperty().set(false);
         }
 
         return SaveResult.SUCCESS;

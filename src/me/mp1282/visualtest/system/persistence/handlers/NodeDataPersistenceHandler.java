@@ -4,9 +4,11 @@ import com.google.gson.*;
 import me.mp1282.visualtest.system.diagram.node.data.ConstantNodeData;
 import me.mp1282.visualtest.system.diagram.node.data.NodeData;
 import me.mp1282.visualtest.system.diagram.node.data.RangeCheckNodeData;
+import me.mp1282.visualtest.system.diagram.node.data.SwitchNodeData;
 import me.mp1282.visualtest.system.persistence.IPersistenceHandler;
 import me.mp1282.visualtest.system.persistence.handlers.nodedata.ConstantNodeDataPersistenceHandler;
 import me.mp1282.visualtest.system.persistence.handlers.nodedata.RangeCheckNodeDataPersistenceHandler;
+import me.mp1282.visualtest.system.persistence.handlers.nodedata.SwitchNodeDataPersistenceHandler;
 
 import java.lang.reflect.Type;
 
@@ -18,6 +20,7 @@ public class NodeDataPersistenceHandler implements IPersistenceHandler<NodeData>
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(ConstantNodeData.class, new ConstantNodeDataPersistenceHandler())
             .registerTypeAdapter(RangeCheckNodeData.class, new RangeCheckNodeDataPersistenceHandler())
+            .registerTypeAdapter(SwitchNodeData.class, new SwitchNodeDataPersistenceHandler())
             .create();
 
     @Override

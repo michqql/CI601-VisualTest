@@ -23,6 +23,17 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
         getChildren().add(createRoot());
     }
 
+    /**
+     * SkinBase.dispose() is a no-op by default, so the old skin's children would
+     * otherwise remain in the control's children list after setSkin() is called,
+     * causing stale port components to remain visible.
+     */
+    @Override
+    public void dispose() {
+        getChildren().clear();
+        super.dispose();
+    }
+
     protected Node createRoot() {
         final DiagramNodeUi nodeUi = getSkinnable();
         final VBox root = new VBox(); /* The root container */
@@ -42,9 +53,11 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
         final HBox outputs = new HBox(); /* Container for data port outputs and execution path OUT port(s) */
         outputs.setAlignment(Pos.TOP_CENTER);
         outputs.setSpacing(5);
-        /* Execution path OUT port(s) at the end of the outputs row */
+        /* Execution path OUT port(s) at the end of the outputs row.
+         * Use nodeAfterPaths.size() rather than getExecutionPathOutputCount() so that
+         * nodes whose port list was resized after construction render correctly. */
         final Executable exe = nodeUi.getNode().getExecutable();
-        for (int i = 0; i < exe.getExecutionPathOutputCount(); i++)
+        for (int i = 0; i < nodeUi.getNode().getNodeAfterPaths().size(); i++)
             outputs.getChildren().add(execPathPortNode(exe, i));
 
         /* Populate output data ports */
@@ -82,7 +95,7 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
      * for this port, it is shown as a persistent text label. Otherwise, a hover-visible text
      * label showing "IN" or "OUT" is displayed when the node is hovered.
      */
-    private Node execPathPortNode(Executable exe, int branchIndex) {
+    protected Node execPathPortNode(Executable exe, int branchIndex) {
         final ExecutionPathPortComponent port = new ExecutionPathPortComponent(this, branchIndex);
         final String customLabel = exe.getExecutionPathLabel(branchIndex);
 

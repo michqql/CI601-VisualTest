@@ -7,12 +7,14 @@ import me.mp1282.visualtest.system.executable.IExecutableTypeHolder;
 import me.mp1282.visualtest.system.persistence.IPersistenceHandler;
 import me.mp1282.visualtest.util.GsonUtil;
 
+
 import java.lang.reflect.Type;
 
 public class ExecutablePersistenceHandler implements IPersistenceHandler<Executable> {
 
     private static final String TYPE_KEY           = "type";
     private static final String PERSISTENCE_ID_KEY = "persistence_id";
+    private static final String EXTRA_CONFIG_KEY   = "extra_config";
 
     @Override
     public Executable deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext ctx) throws JsonParseException {
@@ -27,7 +29,10 @@ public class ExecutablePersistenceHandler implements IPersistenceHandler<Executa
         if(persistenceId == null)
             throw new IllegalStateException("Unexpected null value (persistenceId)");
 
-        return holder.findExecutableByPersistenceId(persistenceId).orElse(null);
+        Executable template = holder.findExecutableByPersistenceId(persistenceId).orElse(null);
+        if (template != null && root.has(EXTRA_CONFIG_KEY))
+            return template.restoreFromConfig(root.getAsJsonObject(EXTRA_CONFIG_KEY));
+        return template;
     }
 
     @Override
@@ -35,6 +40,8 @@ public class ExecutablePersistenceHandler implements IPersistenceHandler<Executa
         final JsonObject root = new JsonObject();
         root.addProperty(TYPE_KEY,           executable.getHolder().getType());
         root.addProperty(PERSISTENCE_ID_KEY, executable.getPersistenceId());
+        JsonObject extraConfig = executable.getExtraConfig();
+        if (extraConfig != null) root.add(EXTRA_CONFIG_KEY, extraConfig);
         return root;
     }
 }

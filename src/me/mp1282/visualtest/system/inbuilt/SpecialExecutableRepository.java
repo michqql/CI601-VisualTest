@@ -4,6 +4,9 @@ import me.mp1282.visualtest.system.executable.IExecutableTypeHolder;
 import me.mp1282.visualtest.system.inbuilt.special.BranchExecutable;
 import me.mp1282.visualtest.system.inbuilt.special.ConstantExecutable;
 import me.mp1282.visualtest.system.inbuilt.special.RangeCheckExecutable;
+import me.mp1282.visualtest.system.inbuilt.special.ForLoopExecutable;
+import me.mp1282.visualtest.system.inbuilt.special.MergeExecutable;
+import me.mp1282.visualtest.system.inbuilt.special.SwitchExecutable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,6 +22,9 @@ public class SpecialExecutableRepository implements IExecutableTypeHolder<Specia
         repository.add(new ConstantExecutable());
         repository.add(new RangeCheckExecutable());
         repository.add(new BranchExecutable());
+        repository.add(new SwitchExecutable());
+        repository.add(new ForLoopExecutable());
+        repository.add(new MergeExecutable());
 
         /* Initialize all special executables */
         for (SpecialExecutable executable : repository) {

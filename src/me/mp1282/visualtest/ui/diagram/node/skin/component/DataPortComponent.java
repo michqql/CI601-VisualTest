@@ -50,6 +50,7 @@ public class DataPortComponent extends StackPane {
         /* Capture all mouse events on this pane, and fire them on the DiagramNodeUi */
         addEventHandler(MouseEvent.ANY, event -> {
             final DiagramNodeUi ui = skinParent.getSkinnable();
+            if (ui == null) return; /* skin disposed */
             /* Fire generic mouse event */
             ui.fireEvent(new DataPortMouseEvent(DataPortMouseEvent.ANY_MOUSE, ui, dataPort, event));
 
@@ -72,7 +73,9 @@ public class DataPortComponent extends StackPane {
     }
 
     private void pushPositionToParent() {
+        DiagramNodeUi ui = skinParent.getSkinnable();
+        if (ui == null) return; /* skin is being disposed; ignore stale bounds change */
         Bounds b = localToScene(getBoundsInLocal());
-        skinParent.getSkinnable().setDataPortArea(dataPort, b);
+        ui.setDataPortArea(dataPort, b);
     }
 }

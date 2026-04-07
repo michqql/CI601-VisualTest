@@ -50,6 +50,7 @@ public class ExecutionPathPortComponent extends StackPane {
         /* Capture all mouse events on this pane, and fire them on the DiagramNodeUi */
         addEventHandler(MouseEvent.ANY, event -> {
             final DiagramNodeUi ui = skinParent.getSkinnable();
+            if (ui == null) return; /* skin disposed */
             ui.fireEvent(new ExecutionPathPortMouseEvent(ExecutionPathPortMouseEvent.ANY_MOUSE, ui, branchIndex, event));
 
             if (event.getEventType() == MouseEvent.MOUSE_CLICKED)
@@ -64,7 +65,9 @@ public class ExecutionPathPortComponent extends StackPane {
     }
 
     private void pushPositionToParent() {
+        DiagramNodeUi ui = skinParent.getSkinnable();
+        if (ui == null) return; /* skin is being disposed; ignore stale bounds change */
         Bounds b = localToScene(getBoundsInLocal());
-        skinParent.getSkinnable().setExecutionPathPortArea(branchIndex, b);
+        ui.setExecutionPathPortArea(branchIndex, b);
     }
 }

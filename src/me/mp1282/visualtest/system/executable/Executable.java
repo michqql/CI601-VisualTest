@@ -1,5 +1,6 @@
 package me.mp1282.visualtest.system.executable;
 
+import com.google.gson.JsonObject;
 import javafx.scene.input.DataFormat;
 import me.mp1282.visualtest.system.diagram.node.data.NodeData;
 import me.mp1282.visualtest.system.executable.iodata.ParameterType;
@@ -121,6 +122,38 @@ public abstract class Executable {
     }
 
     /**
+     * Returns a fresh, fully-initialised executable instance to use when creating a new
+     * {@link me.mp1282.visualtest.system.diagram.node.DiagramNode} from the UI (drag-drop).
+     * <p>
+     * Most executables are stateless singletons, so the default returns {@code this}.
+     * Override when the executable requires per-node state baked into the instance
+     * (e.g. a configurable port count).
+     */
+    public Executable createForNode() {
+        return this;
+    }
+
+    /**
+     * Serialises any per-instance configuration that must survive a save/load cycle.
+     * Returns {@code null} by default (no extra config needed).
+     * The returned object is stored alongside the executable's persistence ID.
+     */
+    public JsonObject getExtraConfig() {
+        return null;
+    }
+
+    /**
+     * Re-creates a configured instance from the extra-config object that was previously
+     * returned by {@link #getExtraConfig()} and stored in the save file.
+     * The returned instance must already be initialised (call
+     * {@link #init(IExecutableTypeHolder)} if needed).
+     * Default: returns {@code this} (singleton, no extra config).
+     */
+    public Executable restoreFromConfig(JsonObject config) {
+        return this;
+    }
+
+    /**
      * Gets the display label for an execution path port.
      * <p>
      * Returns {@code null} by default, meaning the UI will show a generic "IN" / "OUT" label
@@ -153,9 +186,10 @@ public abstract class Executable {
      * The default always returns {@code 0} (first / only path).
      *
      * @param inputs The same inputs array that was passed to execute.
+     * @param data   The per-node state data (same instance passed to execute).
      * @return The index into {@link me.mp1282.visualtest.system.diagram.node.DiagramNode#getNodeAfterPaths()}.
      */
-    public int getChosenBranchIndex(Object[] inputs) {
+    public int getChosenBranchIndex(Object[] inputs, NodeData data) {
         return 0;
     }
 

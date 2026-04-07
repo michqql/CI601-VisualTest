@@ -135,6 +135,10 @@ public class DiagramUi extends Pane {
          */
         ui.addEventHandler(ExecutableBodyMouseEvent.PRESSED, this::handleMousePressedForNode);
 
+        /* When a node's execution path ports are dynamically resized (e.g. Switch cases
+         * added/removed), rebuild all connector lines so stale lines are cleaned up. */
+        ui.setOnPortsChanged(connectorHolderUi::rebuildConnectors);
+
         /* Don't need to bind or set layoutX/Y here as the ExecutableBackedUi
          * class already binds these properties to the DiagramNode properties.
          */
@@ -260,7 +264,10 @@ public class DiagramUi extends Pane {
             /* Retrieve the executable from the DragContext */
             if(DragContext.getObject() instanceof Executable exe) {
                 try {
-                    final DiagramNode node = new DiagramNode(exe);
+                    /* createForNode() returns a fresh per-instance executable for
+                     * executables that require per-node state (e.g. SwitchExecutable).
+                     * For all others it returns the shared singleton unchanged. */
+                    final DiagramNode node = new DiagramNode(exe.createForNode());
                     diagram.addDiagramNode(node);
                     node.xProperty().set(e.getX());
                     node.yProperty().set(e.getY());

@@ -34,6 +34,8 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
     protected final Map<IDataPort<?>, ObservableBounds> dataPortToAreaMap;
     protected final Map<Integer, ObservableBounds> executionPathPortToAreaMap;
 
+    private Runnable onPortsChanged;
+
     public DiagramNodeUi(final DiagramNode node) {
         this.node                        = node;
         this.selected                    = new SimpleBooleanProperty();
@@ -79,8 +81,11 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
     public void setExecutionPathPortArea(int branchIndex, Bounds sceneBounds) {
         if (getParent() == null)
             return;
+        ObservableBounds entry = executionPathPortToAreaMap.get(branchIndex);
+        if (entry == null)
+            return; /* port was removed from the map before the old skin finished disposing */
         Bounds parentBounds = getParent().sceneToLocal(sceneBounds);
-        executionPathPortToAreaMap.get(branchIndex).rawBoundsProperty().set(parentBounds);
+        entry.rawBoundsProperty().set(parentBounds);
     }
 
     public ObservableBounds getExecutionPathPortAreaProperty(int branchIndex) {
@@ -101,13 +106,40 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
         return dataPortToAreaMap.get(dataPort);
     }
 
+    /**
+     * Sets a callback that is fired after {@link #refreshExecutionPaths(int)} rebuilds
+     * the execution-path ports. Used by {@link me.mp1282.visualtest.ui.diagram.DiagramUi}
+     * to trigger a connector-line rebuild when a node's port count changes.
+     */
+    public void setOnPortsChanged(Runnable callback) {
+        this.onPortsChanged = callback;
+    }
+
+    /**
+     * Updates the execution-path port area map to reflect a new outgoing port count and
+     * re-creates the skin so the new ports are rendered immediately.
+     * Existing {@link ObservableBounds} instances are reused where possible so that any
+     * connector lines already bound to them keep working.
+     */
+    public void refreshExecutionPaths(int newOutCount) {
+        /* Remove entries for ports that no longer exist */
+        executionPathPortToAreaMap.keySet().removeIf(k -> k >= 0 && k >= newOutCount);
+        /* Add entries for newly added ports */
+        for (int i = 0; i < newOutCount; i++)
+            executionPathPortToAreaMap.putIfAbsent(i, new ObservableBounds());
+        /* Re-create the skin so it renders the updated port list */
+        setSkin(SkinFactory.createSkin(this));
+        if (onPortsChanged != null)
+            onPortsChanged.run();
+    }
+
     private Map<Integer, ObservableBounds> createExecutionPathPortAreaMap() {
         Map<Integer, ObservableBounds> map = new HashMap<>();
         map.put(-1, new ObservableBounds());
-        int outCount = node.getExecutable().getExecutionPathOutputCount();
+        int outCount = node.getNodeAfterPaths().size();
         for (int i = 0; i < outCount; i++)
             map.put(i, new ObservableBounds());
-        return Collections.unmodifiableMap(map);
+        return map; /* mutable — refreshExecutionPaths() may add/remove entries */
     }
 
     private Map<IDataPort<?>, ObservableBounds> createDataPortToAreaMap() {

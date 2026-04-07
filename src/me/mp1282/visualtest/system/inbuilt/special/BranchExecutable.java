@@ -40,7 +40,7 @@ public class BranchExecutable extends SpecialExecutable {
     }
 
     @Override
-    public int getChosenBranchIndex(Object[] inputs) {
+    public int getChosenBranchIndex(Object[] inputs, NodeData data) {
         return (inputs[0] instanceof Boolean b && b) ? TRUE_BRANCH : FALSE_BRANCH;
     }
 

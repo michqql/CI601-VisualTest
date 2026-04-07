@@ -91,12 +91,37 @@ public class DiagramNode extends Identifiable {
         return height;
     }
 
+    /**
+     * Resizes the outgoing execution path list to {@code newCount}.
+     * <ul>
+     *   <li>Growing: appends new, unconnected {@link ExecutionPath} entries.</li>
+     *   <li>Shrinking: disconnects and removes excess entries (both sides of each
+     *       removed connection are cleared).</li>
+     * </ul>
+     */
+    public void setExecutionPathCount(int newCount) {
+        int current = nodeAfterPaths.size();
+        if (newCount < current) {
+            for (int i = newCount; i < current; i++) {
+                DiagramNode target = nodeAfterPaths.get(i).getOther();
+                if (target != null) {
+                    target.getNodeBefore().setOther(null);
+                    nodeAfterPaths.get(i).setOther(null);
+                }
+            }
+            nodeAfterPaths.subList(newCount, current).clear();
+        } else {
+            for (int i = current; i < newCount; i++)
+                nodeAfterPaths.add(new ExecutionPath(this));
+        }
+    }
+
     private List<ExecutionPath> createNodeAfterPaths(int count) {
         List<ExecutionPath> paths = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             paths.add(new ExecutionPath(this));
         }
-        return Collections.unmodifiableList(paths);
+        return paths; /* mutable — setExecutionPathCount() may grow/shrink it */
     }
 
     private List<InputParameter> createInputs() {

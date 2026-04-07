@@ -8,6 +8,7 @@ import me.mp1282.visualtest.system.diagram.port.InputParameter;
 import me.mp1282.visualtest.system.diagram.port.OutputReturn;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.system.executable.iodata.ParameterType;
+import me.mp1282.visualtest.system.inbuilt.special.ForLoopExecutable;
 
 import java.util.*;
 
@@ -127,6 +128,12 @@ public class ExecuteTask {
         log.log(System.Logger.Level.INFO, "Executing: " + exe.getName());
         exe.execute(inputs, outputs, currentNode.getData());
 
+        /* ForLoop: execute body nodes inline N times instead of the normal path */
+        if (exe instanceof ForLoopExecutable) {
+            handleForLoop(currentNode, inputs);
+            return result;
+        }
+
         /* Store outputs */
         for(OutputReturn outputPort : currentNode.getOutputs()) {
             Object output = outputs[outputPort.getType().getIndex()];
@@ -139,7 +146,7 @@ public class ExecuteTask {
         /* If this is a multi-branch node, determine which path to skip */
         List<ExecutionPath> afterPaths = currentNode.getNodeAfterPaths();
         if (afterPaths.size() > 1) {
-            int chosenIndex = exe.getChosenBranchIndex(inputs);
+            int chosenIndex = exe.getChosenBranchIndex(inputs, currentNode.getData());
             for (int i = 0; i < afterPaths.size(); i++) {
                 if (i != chosenIndex)
                     markSkipped(afterPaths.get(i).getOther());
@@ -147,6 +154,81 @@ public class ExecuteTask {
         }
 
         return result;
+    }
+
+    /**
+     * Handles inline execution of a ForLoop node's body subgraph.
+     * <p>
+     * The loop body is identified as all nodes that currently sit at the head of
+     * {@link #executionOrder} up to (but not including) the node connected via the
+     * DONE path. Those nodes are removed from {@code executionOrder} and executed
+     * {@code count} times, with the loop index output updated each iteration.
+     * After the loop finishes, the DONE path continues normally.
+     */
+    private void handleForLoop(DiagramNode loopNode, Object[] inputs) throws Exception {
+        int count = (inputs[0] instanceof Number n) ? n.intValue() : 0;
+        if (count < 0) count = 0;
+
+        /* The DONE path node is the boundary between body and post-loop graph */
+        DiagramNode doneNode = loopNode.getNodeAfterPath(ForLoopExecutable.DONE_INDEX).getOther();
+
+        /* Pull loop body nodes out of the execution queue */
+        List<DiagramNode> loopBody = new ArrayList<>();
+        while (!executionOrder.isEmpty() && executionOrder.get(0) != doneNode) {
+            loopBody.add(executionOrder.removeFirst());
+        }
+
+        /* Identify inputs to loop body nodes that originate from OUTSIDE the loop.
+         * These must be restored before each iteration because the normal execution
+         * consumes (removes) entries from inputPortToDataMap. */
+        Set<DiagramNode> bodySet = new HashSet<>(loopBody);
+        Map<IDataPort<ParameterType>, Object> outsideInputSnapshot = new HashMap<>();
+        for (DiagramNode bodyNode : loopBody) {
+            for (InputParameter port : bodyNode.getInputs()) {
+                if (port.getFrom() == null || !bodySet.contains(port.getFrom().getParentNode())) {
+                    outsideInputSnapshot.put(port, inputPortToDataMap.get(port));
+                }
+            }
+        }
+
+        /* Execute loop body 'count' times */
+        for (int i = 0; i < count; i++) {
+            /* Restore external inputs (consumed on previous iteration) */
+            inputPortToDataMap.putAll(outsideInputSnapshot);
+
+            /* Publish the current index on ForLoop's output port */
+            for (OutputReturn outputPort : loopNode.getOutputs()) {
+                if (outputPort.getTo() != null)
+                    inputPortToDataMap.put(outputPort.getTo(), i);
+            }
+
+            /* Execute each body node in topological order */
+            for (DiagramNode bodyNode : loopBody) {
+                if (skippedNodes.contains(bodyNode)) continue;
+
+                Executable bodyExe = bodyNode.getExecutable();
+                Object[] bodyInputs  = new Object[bodyExe.getNumberOfParameters()];
+                Object[] bodyOutputs = new Object[bodyExe.getNumberOfReturnValues()];
+
+                for (IDataPort<ParameterType> port : bodyNode.getInputs())
+                    bodyInputs[port.getType().getIndex()] = inputPortToDataMap.remove(port);
+
+                bodyExe.execute(bodyInputs, bodyOutputs, bodyNode.getData());
+
+                for (OutputReturn outputPort : bodyNode.getOutputs()) {
+                    if (outputPort.getTo() != null)
+                        inputPortToDataMap.put(outputPort.getTo(), bodyOutputs[outputPort.getType().getIndex()]);
+                }
+            }
+        }
+
+        /* Clean up any remaining index output entry so it doesn't leak to doneNode */
+        for (OutputReturn outputPort : loopNode.getOutputs())
+            inputPortToDataMap.remove(outputPort.getTo());
+
+        /* Mark the LOOP path subgraph as skipped so the runtime does not try to
+         * re-execute body nodes (they have already been removed from executionOrder) */
+        markSkipped(loopNode.getNodeAfterPath(ForLoopExecutable.LOOP_INDEX).getOther());
     }
 
     /* BFS from start, marking all reachable nodes (via execution paths) as skipped */

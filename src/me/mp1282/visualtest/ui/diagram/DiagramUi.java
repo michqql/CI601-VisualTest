@@ -12,11 +12,12 @@ import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.diagram.runtime.ExecuteTask;
 import me.mp1282.visualtest.system.executable.Executable;
+import me.mp1282.visualtest.ui.UiPreferencesService;
+import me.mp1282.visualtest.ui.diagram.explain.DiagramNodeExplainTooltipUi;
 import me.mp1282.visualtest.ui.diagram.helper.ConnectionHelper;
 import me.mp1282.visualtest.ui.diagram.helper.KeyboardHelper;
 import me.mp1282.visualtest.ui.diagram.helper.SelectionHelper;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeHolderUi;
-import me.mp1282.visualtest.ui.diagram.node.DiagramNodeInfoUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.diagram.port.*;
 import me.mp1282.visualtest.ui.event.DataPortMouseEvent;
@@ -46,6 +47,7 @@ public class DiagramUi extends Pane {
     private final DiagramNodeHolderUi nodeHolderUi;
     private final ConnectorHolderUi connectorHolderUi;
     private final DiagramExecutionOverlayUi overlayUi;
+    private final DiagramNodeExplainTooltipUi explainTooltip;
 
     public DiagramUi(final Diagram diagram) {
         this.diagram = diagram;
@@ -64,16 +66,12 @@ public class DiagramUi extends Pane {
         this.connectorHolderUi = new ConnectorHolderUi(this, nodeHolderUi,
                 this::onDataPortConnectorUiAdd, this::onExecutionPathConnectorUiAdd);
         this.overlayUi = new DiagramExecutionOverlayUi();
+        this.explainTooltip = new DiagramNodeExplainTooltipUi();
 
         connectionHelper.setConnectorHolderUi(connectorHolderUi);
 
         /* Ensure the canvas cannot receive mouse events */
         gridCanvas.setMouseTransparent(true);
-
-        /* Ensure the diagram node info UI is on the right side of this UI */
-        final DiagramNodeInfoUi infoUi = new DiagramNodeInfoUi(selectionHelper.getList());
-        infoUi.layoutXProperty().bind(widthProperty().subtract(infoUi.widthProperty()).subtract(10));
-        infoUi.layoutYProperty().set(10);
 
         /* Add event listeners to the size of this UI component
          * that redraws the grid lines
@@ -113,9 +111,12 @@ public class DiagramUi extends Pane {
                 nodeHolderUi,
                 connectionHelper.getDataPortConnectionLine(),
                 connectionHelper.getExecutionPathConnectionLine(),
-                infoUi,
-                overlayUi
+                overlayUi,
+                explainTooltip
         );
+
+        UiPreferencesService.getInstance().explainModeProperty()
+                .addListener((_, _, on) -> { if (!on) explainTooltip.hide(); });
 
         /* Must rebuild connectors from the start in case the diagram was loaded with connections */
         connectorHolderUi.rebuildConnectors();
@@ -142,6 +143,13 @@ public class DiagramUi extends Pane {
         /* When a node's execution path ports are dynamically resized (e.g. Switch cases
          * added/removed), rebuild all connector lines so stale lines are cleaned up. */
         ui.setOnPortsChanged(connectorHolderUi::rebuildConnectors);
+
+        ui.hoverProperty().addListener((_, _, hovering) -> {
+            if (hovering && UiPreferencesService.getInstance().explainModeProperty().get())
+                explainTooltip.show(ui);
+            else
+                explainTooltip.hide();
+        });
 
         /* Don't need to bind or set layoutX/Y here as the ExecutableBackedUi
          * class already binds these properties to the DiagramNode properties.

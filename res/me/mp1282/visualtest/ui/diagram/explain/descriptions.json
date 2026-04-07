@@ -1,0 +1,11 @@
+{
+  "BranchExecutable": "Reads a boolean input and follows the TRUE or FALSE execution path. The other path is skipped.",
+  "ForLoopExecutable": "Repeats the LOOP execution path N times (once per iteration), then follows the DONE path. Outputs the current loop index (0-based).",
+  "SwitchExecutable": "Routes execution to one of {case.count} case path(s) based on the input value. Unmatched input takes the DEFAULT path.",
+  "MergeExecutable": "A visual join-point that re-unifies diverging execution paths back into a single sequential flow.",
+  "ConstantExecutable": "Outputs a fixed constant value that was configured when the node was created.",
+  "RangeCheckExecutable": "Checks whether the input number falls within the configured min\u2013max range (inclusive). Outputs a boolean result.",
+  "DiagramRefExecutable": "Runs the sub-diagram \"{diagram.name}\" as a single step.",
+  "MethodExecutable": "Calls the Java method {method.description}.",
+  "default": "{executable.name}"
+}

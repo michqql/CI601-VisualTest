@@ -30,5 +30,6 @@ bin/
 ### Mac OS ###
 .DS_Store
 
-### 3rd Party ###
+### Project Ignores ###
 /3rdParty/
+/projects/

@@ -30,7 +30,10 @@ public abstract class MethodExecutable extends Executable {
             outputs[0] = returnedValue;
     }
 
-    @Override
+    public String getMethodDescription() {
+        return method.getDeclaringClass().getSimpleName() + "." + method.getName();
+    }
+
     public String getName() {
         return this.method.getName();
     }

@@ -19,21 +19,30 @@ public class DiagramNodeHolderUi extends Pane {
     /* A lookup map to find the UI element from the DiagramNode object */
     private final DiagramNodeHashMap<DiagramNode, DiagramNodeUi> nodeToUiMap;
 
+    private final Diagram diagram;
     private final Consumer<DiagramNodeUi> onAddConsumer;
     private final Consumer<DiagramNodeUi> onRemoveConsumer;
 
     public DiagramNodeHolderUi(final Diagram diagram,
                                Consumer<DiagramNodeUi> onAddConsumer, Consumer<DiagramNodeUi> onRemoveConsumer) {
+        this.diagram = diagram;
         this.nodeToUiMap = new DiagramNodeHashMap<>();
         this.onAddConsumer = onAddConsumer;
         this.onRemoveConsumer = onRemoveConsumer;
+        setPickOnBounds(false);
 
-        /* For each node currently in the diagram, add a UI element */
-        for(DiagramNode node : diagram.nodesProperty())
-            add(node);
-
-        /* Listen for changes in the diagram node's map and add/remove children UI as appropriate */
+        /* Listen for future changes — initial nodes are added via populate() */
         diagram.nodesProperty().addListener((ListChangeListener<? super DiagramNode>) this::onListChange);
+    }
+
+    /**
+     * Adds a {@link DiagramNodeUi} for every node already present in the diagram.
+     * Must be called after all collaborators (e.g. {@link me.mp1282.visualtest.ui.diagram.port.ConnectorHolderUi})
+     * have been constructed so that the {@code onAddConsumer} callback can safely reference them.
+     */
+    public void populate() {
+        for (DiagramNode node : diagram.nodesProperty())
+            add(node);
     }
 
     public ReadOnlyMap<DiagramNode, DiagramNodeUi> getNodeToUiMap() {

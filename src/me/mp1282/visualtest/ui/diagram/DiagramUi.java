@@ -118,6 +118,9 @@ public class DiagramUi extends Pane {
         UiPreferencesService.getInstance().explainModeProperty()
                 .addListener((_, _, on) -> { if (!on) explainTooltip.hide(); });
 
+        /* Populate nodes now that all collaborators are fully constructed */
+        nodeHolderUi.populate();
+
         /* Must rebuild connectors from the start in case the diagram was loaded with connections */
         connectorHolderUi.rebuildConnectors();
     }

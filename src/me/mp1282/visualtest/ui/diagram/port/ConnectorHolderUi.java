@@ -33,6 +33,7 @@ public class ConnectorHolderUi extends Pane {
         this.nodeHolderUi = nodeHolderUi;
         this.onDataPortConnectorAdd = onDataPortConnectorAdd;
         this.onExecutionPathConnectorAdd = onExecutionPathConnectorAdd;
+        setPickOnBounds(false);
     }
 
     public void rebuildConnectors() {

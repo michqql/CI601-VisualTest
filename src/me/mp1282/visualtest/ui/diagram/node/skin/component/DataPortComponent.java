@@ -42,7 +42,7 @@ public class DataPortComponent extends StackPane {
                 bg.setStroke(hover ? STROKE_VISIBLE : STROKE_HIDDEN));
 
         /* The foreground line that is representing the data port itself */
-        final Line fg = new Line(/* X => */ 0, /* Y => */ 0, /* End X => */ 0, /* End Y => */ SIDE_LENGTH);
+        final Line fg = new Line(/* X => */ 0, /* Y => */ SIDE_LENGTH / 2, /* End X => */ SIDE_LENGTH, /* End Y => */ SIDE_LENGTH / 2);
         fg.setStrokeWidth(LINE_WIDTH);
         fg.setStroke(Color.RED);
         fg.setMouseTransparent(true);

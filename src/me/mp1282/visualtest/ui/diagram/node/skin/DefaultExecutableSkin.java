@@ -40,24 +40,24 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
 
     protected Node createRoot() {
         final DiagramNodeUi nodeUi = getSkinnable();
-        final VBox root = new VBox(); /* The root container */
+        final HBox root = new HBox(); /* The root container — left-to-right flow */
         root.setBorder(new Border(new BorderStroke(
                 Color.BLACK, BorderStrokeStyle.DOTTED, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
 
-        final HBox inputs = new HBox(); /* Container for data port inputs and execution path IN port */
-        inputs.setAlignment(Pos.BOTTOM_CENTER);
+        final VBox inputs = new VBox(); /* Left column: execution path IN port and data port inputs */
+        inputs.setAlignment(Pos.CENTER_RIGHT);
         inputs.setSpacing(5);
-        /* Execution path IN port at the start of the inputs row */
+        /* Execution path IN port at the top of the inputs column */
         inputs.getChildren().add(execPathPortNode(nodeUi.getNode().getExecutable(), -1));
         /* Populate input data ports */
         for(IDataPort<?> input : nodeUi.getNode().getInputs()) {
             inputs.getChildren().add(dataPortNode(input, true));
         }
 
-        final HBox outputs = new HBox(); /* Container for data port outputs and execution path OUT port(s) */
-        outputs.setAlignment(Pos.TOP_CENTER);
+        final VBox outputs = new VBox(); /* Right column: execution path OUT port(s) and data port outputs */
+        outputs.setAlignment(Pos.CENTER_LEFT);
         outputs.setSpacing(5);
-        /* Execution path OUT port(s) at the end of the outputs row.
+        /* Execution path OUT port(s) at the top of the outputs column.
          * Use nodeAfterPaths.size() rather than getExecutionPathOutputCount() so that
          * nodes whose port list was resized after construction render correctly. */
         final Executable exe = nodeUi.getNode().getExecutable();
@@ -108,13 +108,12 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
             final Text label = new Text(customLabel);
             label.setStyle("-fx-font-size: 10;");
             label.setMouseTransparent(true);
-            final VBox wrapper = new VBox(2);
-            if(branchIndex >= 0) { /* Output port */
+            final HBox wrapper = new HBox(2);
+            if (branchIndex >= 0) { /* Output port — label left of port (toward node centre) */
                 wrapper.getChildren().addAll(label, port);
-            } else { /* Input port */
+            } else { /* Input port — port left (at edge), label right (toward node centre) */
                 wrapper.getChildren().addAll(port, label);
             }
-
             wrapper.setAlignment(Pos.CENTER);
             return wrapper;
         } else {
@@ -123,10 +122,10 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
             label.setStyle("-fx-font-size: 10;");
             label.setMouseTransparent(true);
             label.visibleProperty().bind(getSkinnable().hoverProperty());
-            final VBox wrapper = new VBox(2);
-            if (branchIndex >= 0) {
+            final HBox wrapper = new HBox(2);
+            if (branchIndex >= 0) { /* Output port — label left of port */
                 wrapper.getChildren().addAll(label, port);
-            } else {
+            } else { /* Input port — port left, label right */
                 wrapper.getChildren().addAll(port, label);
             }
             wrapper.setAlignment(Pos.CENTER);
@@ -140,10 +139,10 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
         label.setStyle("-fx-font-size: 10;");
         label.setMouseTransparent(true);
         label.visibleProperty().bind(getSkinnable().hoverProperty());
-        final VBox wrapper = new VBox(2);
-        if (isInput) {
+        final HBox wrapper = new HBox(2);
+        if (isInput) { /* Port at left edge, label toward node centre */
             wrapper.getChildren().addAll(portComp, label);
-        } else {
+        } else { /* Label toward node centre, port at right edge */
             wrapper.getChildren().addAll(label, portComp);
         }
         wrapper.setAlignment(Pos.CENTER);

@@ -38,11 +38,11 @@ public class ExecutionPathPortComponent extends StackPane {
         bg.hoverProperty().addListener((_, _, hover) ->
                 bg.setStroke(hover ? STROKE_VISIBLE : STROKE_HIDDEN));
 
-        /* Triangle indicator: always pointing down for both IN and OUT ports */
+        /* Triangle indicator: pointing right to indicate left-to-right execution flow */
         final Polygon fg = new Polygon(
-                PAD, PAD,
-                SIDE_LENGTH - PAD, PAD,
-                SIDE_LENGTH / 2, SIDE_LENGTH - PAD
+                PAD,              PAD,
+                PAD,              SIDE_LENGTH - PAD,
+                SIDE_LENGTH - PAD, SIDE_LENGTH / 2
         );
         fg.setFill(Color.BLACK);
         fg.setMouseTransparent(true);

@@ -20,8 +20,18 @@ public class InbuiltMethodRepository implements IReset, IExecutableTypeHolder<In
 
         CLASS_REGISTRY.add(RandomInbuiltMethods.class);
         CLASS_REGISTRY.add(BooleanLogicInbuiltMethods.class);
-        CLASS_REGISTRY.add(NumberInbuiltMethods.class);
+        CLASS_REGISTRY.add(IntegerInbuiltMethods.class);
+        CLASS_REGISTRY.add(LongInbuiltMethods.class);
+        CLASS_REGISTRY.add(FloatInbuiltMethods.class);
+        CLASS_REGISTRY.add(DoubleInbuiltMethods.class);
+        CLASS_REGISTRY.add(MathInbuiltMethods.class);
+        CLASS_REGISTRY.add(StringInbuiltMethods.class);
         CLASS_REGISTRY.add(CollectionsInbuiltMethods.class);
+        CLASS_REGISTRY.add(ObjectInbuiltMethods.class);
+        CLASS_REGISTRY.add(CharacterInbuiltMethods.class);
+        CLASS_REGISTRY.add(TimeInbuiltMethods.class);
+        CLASS_REGISTRY.add(FileInbuiltMethods.class);
+        CLASS_REGISTRY.add(LoggingInbuiltMethods.class);
     }
 
     private final List<Pair<InbuiltFunctionProvider, List<InbuiltMethodExecutable>>> repository;

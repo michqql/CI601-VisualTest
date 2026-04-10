@@ -7,4 +7,5 @@ package me.mp1282.visualtest.ui;
 public class AppSettings {
     public String  lastProjectDirectory = null;
     public boolean explainMode          = false;
+    public String  zoomLevel            = "DEFAULT";
 }

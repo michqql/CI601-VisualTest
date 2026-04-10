@@ -6,6 +6,7 @@ import javafx.collections.ObservableList;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.*;
+import javafx.scene.transform.Scale;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import me.mp1282.visualtest.system.diagram.Diagram;
@@ -40,6 +41,8 @@ public class DiagramUi extends Pane {
 
     private final DoubleProperty translateX;
     private final DoubleProperty translateY;
+    private final Scale nodeScale;
+    private final Scale connectorScale;
 
     /* UI elements that aren't nodes and connected lines*/
     private final Canvas gridCanvas;
@@ -58,6 +61,8 @@ public class DiagramUi extends Pane {
         /* Diagram state */
         this.translateX = new SimpleDoubleProperty();
         this.translateY = new SimpleDoubleProperty();
+        this.nodeScale = new Scale(1, 1, 0, 0);
+        this.connectorScale = new Scale(1, 1, 0, 0);
 
         /* Other UI elements */
         this.gridCanvas = new Canvas();
@@ -83,6 +88,26 @@ public class DiagramUi extends Pane {
         translateX.bindBidirectional(diagram.translateXProperty());
         translateY.bindBidirectional(diagram.translateYProperty());
 
+        /* Apply scale transforms to node and connector holders */
+        nodeHolderUi.getTransforms().add(nodeScale);
+        connectorHolderUi.getTransforms().add(connectorScale);
+
+        /* Listen for zoom level changes */
+        UiPreferencesService.getInstance().zoomLevelProperty()
+                .addListener((_, _, level) -> {
+                    nodeScale.setX(level.getZoom());
+                    nodeScale.setY(level.getZoom());
+                    connectorScale.setX(level.getZoom());
+                    connectorScale.setY(level.getZoom());
+                    redrawGridCanvas();
+                });
+        /* Apply the current zoom level immediately */
+        double initialZoom = UiPreferencesService.getInstance().zoomLevelProperty().get().getZoom();
+        nodeScale.setX(initialZoom);
+        nodeScale.setY(initialZoom);
+        connectorScale.setX(initialZoom);
+        connectorScale.setY(initialZoom);
+
         /* Add event listeners to handle mouse events
          *
          * Using event filter here to process the mouse move event before the ExecutableBackedUi
@@ -91,6 +116,7 @@ public class DiagramUi extends Pane {
         addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMouseClickInEmptyArea);
         addEventFilter (MouseEvent.MOUSE_DRAGGED, this::handleMouseDraggedInEmptyArea);
         addEventFilter (MouseEvent.MOUSE_MOVED,   this::handleMouseMoveInEmptyArea);
+        addEventFilter (ScrollEvent.SCROLL,       this::handleScroll);
 
         /* Add event listeners to handle executable UI elements
          * being dragged over the diagram UI. When they are dragged over
@@ -195,13 +221,29 @@ public class DiagramUi extends Pane {
             translateX.set(translateX.get() + deltaX);
             translateY.set(translateY.get() + deltaY);
 
-            nodeHolderUi.translate(deltaX, deltaY);
+            final double scale = nodeScale.getX();
+            nodeHolderUi.translate(deltaX / scale, deltaY / scale);
 
             redrawGridCanvas();
             connectionHelper.redrawConnectingLine();
 
             e.consume();
         }
+    }
+
+    /* Handles CTRL+scroll to step through zoom levels */
+    private void handleScroll(ScrollEvent e) {
+        if (!e.isControlDown()) return;
+
+        final DiagramZoomLevel[] levels = DiagramZoomLevel.values();
+        final DiagramZoomLevel current = UiPreferencesService.getInstance().zoomLevelProperty().get();
+        int idx = current.ordinal();
+
+        if (e.getDeltaY() > 0) idx = Math.min(idx + 1, levels.length - 1); /* scroll up = zoom in */
+        else                   idx = Math.max(idx - 1, 0);                  /* scroll down = zoom out */
+
+        UiPreferencesService.getInstance().zoomLevelProperty().set(levels[idx]);
+        e.consume();
     }
 
     /* Handles the user moving the mouse within the Diagram ui */
@@ -233,8 +275,9 @@ public class DiagramUi extends Pane {
              * the user is not hovering over a data port
              */
             if(e.isPrimaryButtonDown() && ui.hoveredDataPortProperty().get() == null) {
-                final double deltaX = e.getSceneX() - MouseDelta.lastSceneMouseX.get();
-                final double deltaY = e.getSceneY() - MouseDelta.lastSceneMouseY.get();
+                final double scale = nodeScale.getX();
+                final double deltaX = (e.getSceneX() - MouseDelta.lastSceneMouseX.get()) / scale;
+                final double deltaY = (e.getSceneY() - MouseDelta.lastSceneMouseY.get()) / scale;
 
                 MouseDelta.updatePosition(e);
 
@@ -312,12 +355,14 @@ public class DiagramUi extends Pane {
         GraphicsContext gc = gridCanvas.getGraphicsContext2D();
         gc.clearRect(0, 0, getWidth(), getHeight());
 
-        double spacingPx = 20; /* grid spacing in pixels */
+        double baseSpacing = 20; /* grid spacing in model units */
+        double scale = nodeScale.getX();
+        double spacingPx = baseSpacing * scale;
         gc.setStroke(Color.LIGHTGRAY);
         gc.setLineWidth(0.5);
 
-        double startX = translateX.get() % spacingPx;
-        double startY = translateY.get() % spacingPx;
+        double startX = scale * (translateX.get() % baseSpacing);
+        double startY = scale * (translateY.get() % baseSpacing);
 
         /* Vertical lines */
         for (double x = startX; x < getWidth(); x += spacingPx) {

@@ -21,7 +21,9 @@ import me.mp1282.visualtest.system.jarload.LoadedJarRepository;
 import me.mp1282.visualtest.system.persistence.SaveResult;
 import me.mp1282.visualtest.ui.UiPreferencesService;
 import me.mp1282.visualtest.ui.other.ToastUi;
+import me.mp1282.visualtest.ui.other.ZoomLevelMenuItemUi;
 import me.mp1282.visualtest.ui.project.ProjectWindowUi;
+import me.mp1282.visualtest.util.DiagramZoomLevel;
 
 import java.io.File;
 import java.util.List;
@@ -97,7 +99,28 @@ public class MainMenuBarUi extends MenuBar {
             CheckMenuItem explainItem = new CheckMenuItem("Explain Mode");
             explainItem.selectedProperty().bindBidirectional(
                     UiPreferencesService.getInstance().explainModeProperty());
-            viewMenu.getItems().add(explainItem);
+
+            Menu zoomMenu = new Menu("Zoom");
+            record ZoomEntry(DiagramZoomLevel level, String label) {}
+            ZoomEntry[] zoomEntries = {
+                new ZoomEntry(DiagramZoomLevel.THREE_QUARTERS_OUT, "25%"),
+                new ZoomEntry(DiagramZoomLevel.HALF_OUT,           "50%"),
+                new ZoomEntry(DiagramZoomLevel.QUARTER_OUT,        "75%"),
+                new ZoomEntry(DiagramZoomLevel.DEFAULT,            "100%"),
+                new ZoomEntry(DiagramZoomLevel.QUARTER_IN,         "125%"),
+                new ZoomEntry(DiagramZoomLevel.HALF_IN,            "150%"),
+                new ZoomEntry(DiagramZoomLevel.THREE_QUARTERS_IN,  "175%"),
+            };
+            for (ZoomEntry entry : zoomEntries) {
+                ZoomLevelMenuItemUi item = new ZoomLevelMenuItemUi(entry.label());
+                item.currentZoomLevelProperty().bind(
+                        UiPreferencesService.getInstance().zoomLevelProperty().isEqualTo(entry.level()));
+                item.setOnAction(_ ->
+                        UiPreferencesService.getInstance().zoomLevelProperty().set(entry.level()));
+                zoomMenu.getItems().add(item);
+            }
+
+            viewMenu.getItems().addAll(explainItem, zoomMenu);
         }
 
         getMenus().addAll(projectMenu, runMenu, viewMenu);
@@ -145,10 +168,23 @@ public class MainMenuBarUi extends MenuBar {
         UiPreferencesService.getInstance().explainModeProperty()
                 .set(appSettings.getSettings().explainMode);
 
+        try {
+            DiagramZoomLevel savedZoom = DiagramZoomLevel.valueOf(appSettings.getSettings().zoomLevel);
+            UiPreferencesService.getInstance().zoomLevelProperty().set(savedZoom);
+        } catch (IllegalArgumentException ignored) {
+            /* Unknown value in settings — leave at default */
+        }
+
         /* Persist UI preferences whenever they change */
         UiPreferencesService.getInstance().explainModeProperty()
                 .addListener((_, _, val) -> {
                     appSettings.getSettings().explainMode = val;
+                    appSettings.save();
+                });
+
+        UiPreferencesService.getInstance().zoomLevelProperty()
+                .addListener((_, _, val) -> {
+                    appSettings.getSettings().zoomLevel = val.name();
                     appSettings.save();
                 });
 

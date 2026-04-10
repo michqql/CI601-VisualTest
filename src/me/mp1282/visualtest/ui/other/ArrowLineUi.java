@@ -1,5 +1,6 @@
 package me.mp1282.visualtest.ui.other;
 
+import javafx.beans.property.DoubleProperty;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.input.MouseEvent;
@@ -31,6 +32,22 @@ public class ArrowLineUi extends Group {
                         line.endXProperty(),   line.endYProperty()
                 ),
                 _ -> rebuildArrowLine());
+    }
+
+    public DoubleProperty startXProperty() {
+        return line.startXProperty();
+    }
+
+    public DoubleProperty startYProperty() {
+        return line.startYProperty();
+    }
+
+    public DoubleProperty endXProperty() {
+        return line.endXProperty();
+    }
+
+    public DoubleProperty endYProperty() {
+    return line.endYProperty();
     }
 
     public void setStartX(double startX) {

@@ -1,8 +1,11 @@
 package me.mp1282.visualtest.system.diagram;
 
-import me.mp1282.visualtest.system.executable.DataPort;
+import me.mp1282.visualtest.system.diagram.node.data.NodeData;
+import me.mp1282.visualtest.system.diagram.port.IDataPort;
 import me.mp1282.visualtest.system.executable.Executable;
-import me.mp1282.visualtest.util.Pair;
+import me.mp1282.visualtest.system.executable.iodata.IDataType;
+import me.mp1282.visualtest.system.executable.iodata.ParameterType;
+import me.mp1282.visualtest.system.executable.iodata.ReturnType;
 
 import java.util.List;
 
@@ -16,24 +19,23 @@ public class DiagramRefExecutable extends Executable {
     }
 
     @Override
-    public void execute(Object[] inputs, Object[] outputs) {
+    protected void setup(List<ParameterType> parameterTypes, List<ReturnType> returnTypes) {
+        List<IDataPort<?>> unconnectedPorts = diagram.getDataPortsWithoutConnections();
 
+        for (IDataPort<? extends IDataType> port : unconnectedPorts) {
+            /* Add the unconnected port to this executable's inputs/outputs */
+            if(port.getType().getType() == IDataType.Type.PARAMETER) {
+                parameterTypes.add((ParameterType) port.getType());
+            } else {
+                returnTypes.add((ReturnType) port.getType());
+            }
+        }
     }
 
     @Override
-    protected void populateInputOutputDataPorts(List<DataPort> inputs, List<DataPort> outputs) {
-        List<Pair<DiagramNode, DataPort>> unconnectedPorts =
-                diagram.getDataPortsWithoutConnections();
+    public void execute(Object[] inputs, Object[] outputs,
+                        final NodeData data) {
 
-        for(Pair<DiagramNode, DataPort> pair : unconnectedPorts) {
-            DataPort port = pair.value();
-            /* Add the unconnected port to this executable's inputs/outputs */
-            if(port.inputPort()) {
-                inputs.add(port);
-            } else {
-                outputs.add(port);
-            }
-        }
     }
 
     @Override
@@ -42,7 +44,7 @@ public class DiagramRefExecutable extends Executable {
     }
 
     @Override
-    public String getPersistenceId() {
-        return diagram.nameProperty().get();
+    protected String getNamespace() {
+        return "";
     }
 }

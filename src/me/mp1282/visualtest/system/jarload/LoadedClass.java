@@ -3,23 +3,19 @@ package me.mp1282.visualtest.system.jarload;
 import me.mp1282.visualtest.util.Identifiable;
 
 import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class LoadedClass extends Identifiable {
 
     private final LoadedJar loadedJar;
     private final Class<?> clazz;
-    private final Map<String, LoadedMethod> methodMap;
+    private final Collection<LoadedMethodExecutable> methods;
 
     /* Package-private: Only instantiable by LoadedJar */
     LoadedClass(LoadedJar loadedJar, Class<?> clazz) {
         this.loadedJar = loadedJar;
         this.clazz = clazz;
-        this.methodMap = new HashMap<>();
-
-        inspectClass();
+        this.methods = findMethods();
     }
 
     public LoadedJar getLoadedJar() {
@@ -30,14 +26,17 @@ public class LoadedClass extends Identifiable {
         return clazz;
     }
 
-    public Map<String, LoadedMethod> getMethodMap() {
-        return Collections.unmodifiableMap(methodMap);
+    public Collection<LoadedMethodExecutable> getMethods() {
+        return methods;
     }
 
-    private void inspectClass() {
+    private Collection<LoadedMethodExecutable> findMethods() {
+        List<LoadedMethodExecutable> methods = new ArrayList<>();
+
         for(Method method : clazz.getDeclaredMethods()) {
-            LoadedMethod exe = new LoadedMethod(this, method);
-            methodMap.put(exe.getSignature(), exe);
+            methods.add(new LoadedMethodExecutable(this, method));
         }
+
+        return Collections.unmodifiableCollection(methods);
     }
 }

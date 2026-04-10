@@ -2,29 +2,27 @@ package me.mp1282.visualtest.ui.diagram;
 
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.MenuItem;
 import javafx.scene.input.*;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import me.mp1282.visualtest.system.diagram.Diagram;
-import me.mp1282.visualtest.system.diagram.DiagramNode;
+import me.mp1282.visualtest.system.diagram.node.DiagramNode;
+import me.mp1282.visualtest.system.diagram.runtime.ExecuteTask;
 import me.mp1282.visualtest.system.executable.Executable;
+import me.mp1282.visualtest.ui.UiPreferencesService;
+import me.mp1282.visualtest.ui.diagram.explain.DiagramNodeExplainTooltipUi;
 import me.mp1282.visualtest.ui.diagram.helper.ConnectionHelper;
 import me.mp1282.visualtest.ui.diagram.helper.KeyboardHelper;
 import me.mp1282.visualtest.ui.diagram.helper.SelectionHelper;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeHolderUi;
-import me.mp1282.visualtest.ui.diagram.node.DiagramNodeInfoUi;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
-import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
-import me.mp1282.visualtest.ui.diagram.port.DataPortConnectorLineUi;
-import me.mp1282.visualtest.ui.diagram.port.ExecutionPathConnectorLineUi;
-import me.mp1282.visualtest.ui.diagram.port.IConnectorUi;
+import me.mp1282.visualtest.ui.diagram.port.*;
+import me.mp1282.visualtest.ui.event.DataPortMouseEvent;
+import me.mp1282.visualtest.ui.event.ExecutableBodyMouseEvent;
+import me.mp1282.visualtest.ui.event.ExecutionPathPortMouseEvent;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
 import me.mp1282.visualtest.util.*;
 
@@ -36,46 +34,44 @@ import java.util.*;
 public class DiagramUi extends Pane {
 
     private final Diagram diagram;
-
-    /* Child UI element variables (nodes & connectors) */
-    private final DiagramNodeHolderUi nodeHolderUi;
-    private final Set<DataPortConnectorLineUi> dataPortConnectors;
-    private final Set<ExecutionPathConnectorLineUi> executionPathConnectors;
-
-    private final DoubleProperty translateX;
-    private final DoubleProperty translateY;
-
     /* Helpers */
     private final SelectionHelper selectionHelper;
     private final ConnectionHelper connectionHelper;
 
+    private final DoubleProperty translateX;
+    private final DoubleProperty translateY;
+
     /* UI elements that aren't nodes and connected lines*/
     private final Canvas gridCanvas;
+    /* Child UI element variables (nodes & connectors) */
+    private final DiagramNodeHolderUi nodeHolderUi;
+    private final ConnectorHolderUi connectorHolderUi;
+    private final DiagramExecutionOverlayUi overlayUi;
+    private final DiagramNodeExplainTooltipUi explainTooltip;
 
     public DiagramUi(final Diagram diagram) {
         this.diagram = diagram;
-        /* Main UI elements */
-        this.dataPortConnectors = new HashSet<>();
-        this.executionPathConnectors = new HashSet<>();
-        /* Diagram state */
-        this.translateX = new SimpleDoubleProperty();
-        this.translateY = new SimpleDoubleProperty();
         /* Helpers */
         this.selectionHelper = new SelectionHelper();
         this.connectionHelper = new ConnectionHelper(this);
+
+        /* Diagram state */
+        this.translateX = new SimpleDoubleProperty();
+        this.translateY = new SimpleDoubleProperty();
+
         /* Other UI elements */
         this.gridCanvas = new Canvas();
         this.nodeHolderUi = new DiagramNodeHolderUi(diagram,
-                connectionHelper, selectionHelper,
                 this::onDiagramNodeUiAdd, null);
+        this.connectorHolderUi = new ConnectorHolderUi(this, nodeHolderUi,
+                this::onDataPortConnectorUiAdd, this::onExecutionPathConnectorUiAdd);
+        this.overlayUi = new DiagramExecutionOverlayUi();
+        this.explainTooltip = new DiagramNodeExplainTooltipUi();
+
+        connectionHelper.setConnectorHolderUi(connectorHolderUi);
 
         /* Ensure the canvas cannot receive mouse events */
         gridCanvas.setMouseTransparent(true);
-
-        /* Ensure the diagram node info UI is on the right side of this UI */
-        final DiagramNodeInfoUi infoUi = new DiagramNodeInfoUi(selectionHelper.getList());
-        infoUi.layoutXProperty().bind(widthProperty().subtract(infoUi.widthProperty()).subtract(10));
-        infoUi.layoutYProperty().set(10);
 
         /* Add event listeners to the size of this UI component
          * that redraws the grid lines
@@ -111,11 +107,22 @@ public class DiagramUi extends Pane {
 
         getChildren().addAll(
                 gridCanvas,
+                connectorHolderUi,
                 nodeHolderUi,
-                connectionHelper.getTempConnectionLine(),
-                connectionHelper.getTempExecutionPathLine(),
-                infoUi
+                connectionHelper.getDataPortConnectionLine(),
+                connectionHelper.getExecutionPathConnectionLine(),
+                overlayUi,
+                explainTooltip
         );
+
+        UiPreferencesService.getInstance().explainModeProperty()
+                .addListener((_, _, on) -> { if (!on) explainTooltip.hide(); });
+
+        /* Populate nodes now that all collaborators are fully constructed */
+        nodeHolderUi.populate();
+
+        /* Must rebuild connectors from the start in case the diagram was loaded with connections */
+        connectorHolderUi.rebuildConnectors();
     }
 
     public Diagram getDiagram() {
@@ -123,33 +130,42 @@ public class DiagramUi extends Pane {
     }
 
     private void onDiagramNodeUiAdd(DiagramNodeUi ui) {
-        /* Add event listeners to the component.
-         *
-         * Can't use mouseClicked for this component because it doesn't
-         * get called for some reason, but mousePressed does.
-         */
-        ui.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMousePressedForNode);
-        ui.addEventHandler(MouseEvent.MOUSE_MOVED,   this::handleMouseMoveForNode);
+        /* Add event listeners to the component. */
         ui.addEventHandler(MouseEvent.MOUSE_DRAGGED, this::handleMouseDraggedForNode);
+
+        /* When a data port is clicked, call into the connection helper to handle connecting data ports */
+        ui.addEventHandler(DataPortMouseEvent.CLICK, connectionHelper::onDataPortComponentClickEvent);
+        /* When an execution path port is clicked, call into the connection helper */
+        ui.addEventHandler(ExecutionPathPortMouseEvent.CLICK, connectionHelper::onExecutionPathPortClickEvent);
+        /* Must use PRESSED over CLICK because:
+         * When CLICK => Primary Mouse Button Down = false
+         * When PRESS => Primary Mouse Button Down = true
+         */
+        ui.addEventHandler(ExecutableBodyMouseEvent.PRESSED, this::handleMousePressedForNode);
+
+        /* When a node's execution path ports are dynamically resized (e.g. Switch cases
+         * added/removed), rebuild all connector lines so stale lines are cleaned up. */
+        ui.setOnPortsChanged(connectorHolderUi::rebuildConnectors);
+
+        ui.hoverProperty().addListener((_, _, hovering) -> {
+            if (hovering && UiPreferencesService.getInstance().explainModeProperty().get())
+                explainTooltip.show(ui);
+            else
+                explainTooltip.hide();
+        });
 
         /* Don't need to bind or set layoutX/Y here as the ExecutableBackedUi
          * class already binds these properties to the DiagramNode properties.
          */
 
-        /* Context Menu */
-        ContextMenu contextMenu = new ContextMenu();
-        ui.setContextMenu(contextMenu);
+    }
 
-        /* If the Executable that this node is wrapping has no outputs,
-         * add a MenuItem to specify the execution path.
-         */
-        if(ui.getNode().getExecutable().getNumberOfOutputs() == 0) {
-            MenuItem executionPathItem = new MenuItem("Specify 'Execution Path'");
-            /* TODO: disable this menu item if it doesn't make sense as an action the user can take */
-            executionPathItem.setOnAction(_ -> connectionHelper.handleExecutionPathConnecting(ui, true));
+    private void onDataPortConnectorUiAdd(DataPortConnectorLineUi connector) {
+        connector.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMousePressedForConnector);
+    }
 
-            contextMenu.getItems().add(executionPathItem);
-        }
+    private void onExecutionPathConnectorUiAdd(ExecutionPathConnectorLineUi connector) {
+        connector.setMouseClickConsumer(this::handleMousePressedForConnector);
     }
 
     /* Handles the user clicking in an empty area.
@@ -179,13 +195,6 @@ public class DiagramUi extends Pane {
             translateX.set(translateX.get() + deltaX);
             translateY.set(translateY.get() + deltaY);
 
-            /* Translate all UI components by new translate X and Y */
-            for (Node node : getChildren()) {
-                if (node instanceof IDiagramElement) {
-                    node.setTranslateX(node.getTranslateX() + deltaX);
-                    node.setTranslateY(node.getTranslateY() + deltaY);
-                }
-            }
             nodeHolderUi.translate(deltaX, deltaY);
 
             redrawGridCanvas();
@@ -206,49 +215,15 @@ public class DiagramUi extends Pane {
     }
 
     /* Handles the user clicking on a component */
-    private void handleMousePressedForNode(MouseEvent e) {
-        MouseDelta.updatePosition(e);
+    private void handleMousePressedForNode(ExecutableBodyMouseEvent exeEvent) {
+        final MouseEvent wrappedMouseEvent = exeEvent.getWrappedMouseEvent();
+        MouseDelta.updatePosition(wrappedMouseEvent);
 
         /* Checks if a diagram node was clicked */
-        if(e.getSource() instanceof DiagramNodeUi ui) {
-            /* Try to handle connecting data ports - ONLY if the primary mouse button was pressed */
-            if(e.isPrimaryButtonDown() && connectionHelper.handleDataPortConnecting(ui)) {
-                e.consume();
-                return;
-            }
-
-            /* Next, see if the execution path can be connected - ONLY if the primary mouse button was pressed */
-            if(e.isPrimaryButtonDown() && connectionHelper.handleExecutionPathConnecting(ui, false)) {
-                e.consume();
-                return;
-            }
-
-            /* Perform last:
-             * Try to handle selecting a UI element - ONLY if the primary mouse button was pressed
-             */
-            if(e.isPrimaryButtonDown())
-                selectionHelper.handleSelection(ui, e.isShiftDown());
-        }
-    }
-
-    private void handleMouseMoveForNode(MouseEvent e) {
-        MouseDelta.updatePosition(e);
-
-        if(e.getSource() instanceof DiagramNodeUi ui) {
-            /* For each data port, check if the user is currently hovering,
-             * if so set the hovered property.
-             */
-            for (DataPortArea area : ui.getCachedPortAreas()) {
-                if (area.isInside(e.getX(), e.getY())) {
-                    ui.hoveredDataPortProperty().set(area);
-                    return;
-                }
-            }
-
-            /* No data port is being hovered if the code has reached here,
-             * thus set the hovered property to null
-             */
-            ui.hoveredDataPortProperty().set(null);
+        if(exeEvent.getSource() instanceof DiagramNodeUi ui) {
+            /* Try to handle selecting a UI element - ONLY if the primary mouse button was pressed */
+            if(wrappedMouseEvent.isPrimaryButtonDown())
+                selectionHelper.handleSelection(ui, wrappedMouseEvent.isShiftDown());
         }
     }
 
@@ -304,7 +279,11 @@ public class DiagramUi extends Pane {
             /* Retrieve the executable from the DragContext */
             if(DragContext.getObject() instanceof Executable exe) {
                 try {
-                    final DiagramNode node = diagram.placeExecutable(exe);
+                    /* createForNode() returns a fresh per-instance executable for
+                     * executables that require per-node state (e.g. SwitchExecutable).
+                     * For all others it returns the shared singleton unchanged. */
+                    final DiagramNode node = new DiagramNode(exe.createForNode());
+                    diagram.addDiagramNode(node);
                     node.xProperty().set(e.getX());
                     node.yProperty().set(e.getY());
                 } catch(Exception ex) {
@@ -316,6 +295,16 @@ public class DiagramUi extends Pane {
         }
     }
 
+    public void applyExecutionResult(ExecuteTask task) {
+        connectorHolderUi.applyExecutionPathStates(task);
+        overlayUi.applyExecutionResult(task, nodeHolderUi);
+    }
+
+    public void clearExecutionResult() {
+        connectorHolderUi.clearExecutionPathStates();
+        overlayUi.clearOverlay();
+    }
+
     private void redrawGridCanvas() {
         gridCanvas.setWidth(getWidth());
         gridCanvas.setHeight(getHeight());
@@ -323,177 +312,52 @@ public class DiagramUi extends Pane {
         GraphicsContext gc = gridCanvas.getGraphicsContext2D();
         gc.clearRect(0, 0, getWidth(), getHeight());
 
-        double spacing = 20; // grid spacing in pixels
+        double spacingPx = 20; /* grid spacing in pixels */
         gc.setStroke(Color.LIGHTGRAY);
         gc.setLineWidth(0.5);
 
-        double startX = translateX.get() % spacing;
-        double startY = translateY.get() % spacing;
+        double startX = translateX.get() % spacingPx;
+        double startY = translateY.get() % spacingPx;
 
-        // vertical lines
-        for (double x = startX; x < getWidth(); x += spacing) {
+        /* Vertical lines */
+        for (double x = startX; x < getWidth(); x += spacingPx) {
             gc.strokeLine(x, 0, x, getHeight());
         }
-        // horizontal lines
-        for (double y = startY; y < getHeight(); y += spacing) {
+        /* Horizontal lines */
+        for (double y = startY; y < getHeight(); y += spacingPx) {
             gc.strokeLine(0, y, getWidth(), y);
-        }
-    }
-
-    private void createDataPortConnectorUi(DiagramNodeUi sourceNodeUi, DataPortArea sourcePort,
-                                           DiagramNodeUi targetNodeUi, DataPortArea targetPort) {
-        /* Check if there is already a UI element for this connection */
-        for (DataPortConnectorLineUi ui : dataPortConnectors) {
-            if(ui.equals(sourceNodeUi, sourcePort, targetNodeUi, targetPort))
-                return;
-        }
-
-        final DataPortConnectorLineUi connector = new DataPortConnectorLineUi(
-                sourceNodeUi, sourcePort, targetNodeUi, targetPort);
-        connector.setTranslateX(translateX.get());
-        connector.setTranslateY(translateY.get());
-
-        /* Add event handlers */
-        connector.addEventHandler(MouseEvent.MOUSE_PRESSED, this::handleMousePressedForConnector);
-
-        getChildren().add(connector);
-        sortChildrenByZOrder();
-        dataPortConnectors.add(connector);
-    }
-
-    private void createExecutionPathConnectorUi(DiagramNodeUi before, DiagramNodeUi after) {
-        /* Check if there is already a UI element for this connection */
-        for(ExecutionPathConnectorLineUi ui : executionPathConnectors) {
-            if(ui.equals(before, after))
-                return;
-        }
-
-        final ExecutionPathConnectorLineUi connector = new ExecutionPathConnectorLineUi(before, after);
-        connector.setTranslateX(translateX.get());
-        connector.setTranslateY(translateY.get());
-
-        /* Add event handlers */
-        connector.setMouseClickConsumer(this::handleMousePressedForConnector);
-
-        getChildren().add(connector);
-        sortChildrenByZOrder();
-        executionPathConnectors.add(connector);
-    }
-
-    public void rebuildDataPortConnections() {
-        final ReadOnlyMap<DiagramNode, DiagramNodeUi> nodeToUiMap = nodeHolderUi.getNodeToUiMap();
-
-        /* Firstly remove all current data port connector UI elements */
-        getChildren().removeIf(DataPortConnectorLineUi.class::isInstance);
-        dataPortConnectors.clear();
-
-        /* Loop over each DiagramNode in the Diagram */
-        for (DiagramNode node : diagram.nodesProperty()) {
-            final DiagramNodeUi sourceNodeUi = nodeToUiMap.get(node);
-            if(sourceNodeUi == null) /* TODO: If this is null we have a serious problem */
-                throw new RuntimeException("DiagramNode does not have a DiagramNodeUi when rebuilding data ports! (A)");
-
-            /* Loop over each data port connection for this node */
-            node.dataConnectionsProperty().forEach((port, pair) -> {
-                final DiagramNodeUi targetNodeUi = nodeToUiMap.get(pair.key());
-                if(targetNodeUi == null)
-                    throw new RuntimeException("DiagramNode does not have a DiagramNodeUi when rebuilding data ports! (B)");
-
-                final DataPortArea sourceArea = sourceNodeUi.getAreaFromDataPort(port);
-                if(sourceArea == null)
-                    throw new RuntimeException("DiagramNodeUi does not have a DataPortArea when rebuilding data ports! (A)");
-
-                final DataPortArea targetArea = targetNodeUi.getAreaFromDataPort(pair.value());
-                if(targetArea == null)
-                    throw new RuntimeException("DiagramNodeUi does not have a DataPortArea when rebuilding data ports! (B)");
-
-                /* Create the connection UI */
-                createDataPortConnectorUi(sourceNodeUi, sourceArea, targetNodeUi, targetArea);
-            });
-        }
-    }
-
-    public void rebuildExecutionPathConnections() {
-        final ReadOnlyMap<DiagramNode, DiagramNodeUi> nodeToUiMap = nodeHolderUi.getNodeToUiMap();
-
-        /* Firstly remove all current data port connector UI elements */
-        getChildren().removeIf(ExecutionPathConnectorLineUi.class::isInstance);
-        executionPathConnectors.clear();
-
-        /* Loop over each DiagramNode in the Diagram */
-        for (DiagramNode node : diagram.nodesProperty()) {
-            final DiagramNodeUi currentNodeUi = nodeToUiMap.get(node);
-            if(currentNodeUi == null) /* TODO: If this is null we have a serious problem */
-                throw new RuntimeException("DiagramNode does not have a DiagramNodeUi when rebuilding execution path! (A)");
-
-            final DiagramNode before = node.executionPathNodeBeforeProperty().get();
-            if(before != null) {
-                final DiagramNodeUi beforeNodeUi = nodeToUiMap.get(before);
-                if(beforeNodeUi != null)
-                    createExecutionPathConnectorUi(beforeNodeUi, currentNodeUi);
-            }
-
-            final DiagramNode after = node.executionPathNodeAfterProperty().get();
-            if(after != null) {
-                final DiagramNodeUi afterNodeUi = nodeToUiMap.get(after);
-                if(afterNodeUi != null)
-                    createExecutionPathConnectorUi(currentNodeUi, afterNodeUi);
-            }
         }
     }
 
     private void deleteSelected() {
         final ObservableList<ISelectableUi> selected = selectionHelper.getList();
+        /* Rather than removing nodes from the diagram one by one, add them to this list and
+         * remove them all at once. This results in 1 change fire, rather than several.
+         */
+        final Collection<DiagramNode> nodesToRemove = new ArrayList<>();
 
-        for (ISelectableUi ui : selected) {
+        for (final ISelectableUi ui : selected) {
             if(ui instanceof DiagramNodeUi nodeUi) {
-                DiagramNode node = nodeUi.getNode();
-
-                /* Remove the data port connections to this node
-                 * (node, port '_') -> (pair.key, pair.value)
-                 * (pair.key, pair.value) -> (node, port)
-                 *
-                 * Thus, performing pair.key remove pair.value effectively removes (node, port).
-                 *
-                 * Cannot use diagram.disconnectDataPorts here as that would cause a ConcurrentModificationException
-                 * if the number of connections is greater than 1.
-                 */
-                node.dataConnectionsProperty().forEach((_, pair) -> {
-                    pair.key().dataConnectionsProperty().remove(pair.value());
-                });
-
-                diagram.nodesProperty().remove(node);
-                /* Don't remove DiagramNodeUi from children, as updating nodeProperty triggers
-                 * removal in DiagramNodeHolderUi.
-                 */
+                nodesToRemove.add(nodeUi.getNode());
 
             } else if(ui instanceof DataPortConnectorLineUi lineUi) {
                 /* Calling the disconnect logic on the source port will disconnect the target port too */
-                diagram.disconnectDataPort(lineUi.getSourceNodeUi().getNode(), lineUi.getSourcePort().getDataPort());
-                getChildren().remove(ui);
+                diagram.disconnectDataPort(lineUi.getOutput());
 
             } else if(ui instanceof ExecutionPathConnectorLineUi lineUi) {
-                /* Calling the disconnect logic on the source port will disconnect the target port too */
-                diagram.disconnectExecutionPath(lineUi.getSourceNodeUi().getNode());
-                getChildren().remove(ui);
+                diagram.disconnectExecutionPath(
+                        lineUi.getSourceNodeUi().getNode(),
+                        lineUi.getTargetNodeUi().getNode());
 
             }
         }
 
         selected.clear();
-        rebuildDataPortConnections();
-        rebuildExecutionPathConnections();
-    }
 
-    private void sortChildrenByZOrder() {
-        FXCollections.sort(getChildren(), (a, b) -> {
-            /* Return negative if a should be BELOW b,
-             * return positive if a should be ABOVE b
-             */
-            int priorityA = a instanceof IDiagramElement ui ? ui.getZOrder() : 100;
-            int priorityB = b instanceof IDiagramElement ui ? ui.getZOrder() : 100;
+        /* Updates the node model, which in turn will update the DiagramNodeHolderUi */
+        diagram.removeDiagramNodes(nodesToRemove);
 
-            return priorityB - priorityA;
-        });
+        /* Call into the ConnectorHolderUi to rebuild the connections */
+        connectorHolderUi.rebuildConnectors();
     }
 }

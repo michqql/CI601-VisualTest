@@ -1,30 +1,44 @@
 package me.mp1282.visualtest.ui;
 
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 import me.mp1282.visualtest.system.VisualTestSystem;
+import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.DiagramRepository;
+import me.mp1282.visualtest.system.diagram.runtime.ExecuteTask;
+import me.mp1282.visualtest.system.diagram.runtime.RuntimeEnvironmentService;
 import me.mp1282.visualtest.system.jarload.LoadedJar;
 import me.mp1282.visualtest.system.jarload.LoadedJarRepository;
 import me.mp1282.visualtest.system.persistence.SaveResult;
+import me.mp1282.visualtest.ui.UiPreferencesService;
 import me.mp1282.visualtest.ui.other.ToastUi;
 import me.mp1282.visualtest.ui.project.ProjectWindowUi;
 
 import java.io.File;
+import java.util.List;
 import java.util.Optional;
 
 public class MainMenuBarUi extends MenuBar {
 
     private final LoadedJarRepository jarRepository;
     private final DiagramRepository diagramRepository;
+    private final RuntimeEnvironmentService runtime;
+    private final Window window;
 
-    public MainMenuBarUi() {
+    public MainMenuBarUi(Window window) {
+        this.window = window;
         this.jarRepository = VisualTestSystem.getInstance().getJarRepository();
         this.diagramRepository = VisualTestSystem.getInstance().getDiagramRepository();
+        this.runtime = VisualTestSystem.getInstance().getRuntimeEnvironmentService();
 
         /* Project MenuItem */
         Menu projectMenu = new Menu("Project");
@@ -33,6 +47,7 @@ public class MainMenuBarUi extends MenuBar {
             infoItem.setOnAction(_ -> ProjectWindowUi.showWindow(getScene().getWindow()));
 
             MenuItem saveItem = new MenuItem("Save Project");
+            saveItem.setAccelerator(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN));
             saveItem.setOnAction(this::onSave);
 
             MenuItem loadItem = new MenuItem("Load Project");
@@ -53,7 +68,101 @@ public class MainMenuBarUi extends MenuBar {
                     createDiagramItem);
         }
 
-        getMenus().add(projectMenu);
+        Menu runMenu = new Menu("Run");
+        {
+            MenuItem runItem = new MenuItem("Run Diagram");
+            runItem.setOnAction(_ -> handleRun());
+            runItem.disableProperty().bind(
+                    diagramRepository.selectedDiagramProperty().isNull()
+                            .or(runtime.runningTaskProperty()));
+
+            CheckMenuItem debugItem = new CheckMenuItem("Debug (Step Mode)");
+            debugItem.selectedProperty().bindBidirectional(runtime.stepModeProperty());
+
+            MenuItem stepItem = new MenuItem("Step");
+            stepItem.setOnAction(_ -> runtime.setStepFlag());
+            stepItem.disableProperty().bind(
+                    debugItem.selectedProperty().not()
+                            .or(runtime.runningTaskProperty().not()));
+
+            MenuItem stopItem = new MenuItem("Stop");
+            stopItem.setOnAction(_ -> handleStop());
+            stopItem.disableProperty().bind(runtime.runningTaskProperty().not());
+
+            runMenu.getItems().addAll(runItem, new SeparatorMenuItem(), debugItem, stepItem, new SeparatorMenuItem(), stopItem);
+        }
+
+        Menu viewMenu = new Menu("View");
+        {
+            CheckMenuItem explainItem = new CheckMenuItem("Explain Mode");
+            explainItem.selectedProperty().bindBidirectional(
+                    UiPreferencesService.getInstance().explainModeProperty());
+            viewMenu.getItems().add(explainItem);
+        }
+
+        getMenus().addAll(projectMenu, runMenu, viewMenu);
+
+        initAppSettings();
+
+        if (window instanceof Stage stage)
+            stage.setOnCloseRequest(event -> {
+                boolean anyUnsaved = diagramRepository.getDiagrams().stream()
+                        .anyMatch(d -> d.unsavedProperty().get());
+                if (!anyUnsaved) return;
+
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                alert.initOwner(window);
+                alert.setTitle("Unsaved Changes");
+                alert.setHeaderText("You have unsaved changes.");
+                alert.setContentText("Would you like to save before closing?");
+                ButtonType saveBtn     = new ButtonType("Save",       ButtonBar.ButtonData.YES);
+                ButtonType dontSaveBtn = new ButtonType("Don't Save", ButtonBar.ButtonData.NO);
+                ButtonType cancelBtn   = new ButtonType("Cancel",     ButtonBar.ButtonData.CANCEL_CLOSE);
+                alert.getButtonTypes().setAll(saveBtn, dontSaveBtn, cancelBtn);
+
+                Optional<ButtonType> result = alert.showAndWait();
+                if (result.isEmpty() || result.get().getButtonData() == ButtonBar.ButtonData.CANCEL_CLOSE) {
+                    event.consume();
+                    return;
+                }
+
+                if (result.get().getButtonData() == ButtonBar.ButtonData.YES) {
+                    onSave(null);
+                    /* If no project directory was chosen (user cancelled the chooser),
+                     * the save didn't complete — abort the close so data isn't lost. */
+                    boolean stillUnsaved = diagramRepository.getDiagrams().stream()
+                            .anyMatch(d -> d.unsavedProperty().get());
+                    if (stillUnsaved)
+                        event.consume();
+                }
+            });
+    }
+
+    private void initAppSettings() {
+        final AppSettingsService appSettings = AppSettingsService.getInstance();
+
+        /* Restore UI preferences */
+        UiPreferencesService.getInstance().explainModeProperty()
+                .set(appSettings.getSettings().explainMode);
+
+        /* Persist UI preferences whenever they change */
+        UiPreferencesService.getInstance().explainModeProperty()
+                .addListener((_, _, val) -> {
+                    appSettings.getSettings().explainMode = val;
+                    appSettings.save();
+                });
+
+        /* Auto-reopen last project after the UI is fully shown */
+        File lastDir = appSettings.getLastProjectDirectory();
+        if (lastDir != null) {
+            Platform.runLater(() -> {
+                try {
+                    VisualTestSystem.getInstance().getPersistenceService().load(lastDir);
+                } catch (Exception e) {
+                    System.err.println("Failed to auto-load last project: " + e.getMessage());
+                }
+            });
+        }
     }
 
     private void onSave(ActionEvent event) {
@@ -72,7 +181,9 @@ public class MainMenuBarUi extends MenuBar {
             e.printStackTrace();
         }
 
-        if(result != SaveResult.SUCCESS) {
+        if (result == SaveResult.SUCCESS) {
+            AppSettingsService.getInstance().setLastProjectDirectory(projectDirectory.get());
+        } else {
             ToastUi.make(getScene().getWindow(), "Save failed: " + result.name(),
                     0, 2000, 500);
         }
@@ -81,12 +192,14 @@ public class MainMenuBarUi extends MenuBar {
     private void onLoad(ActionEvent event) {
         /* Prompt the user for a directory to load */
         File dir = promptProjectDirectoryChooser("Load Project");
+        if (dir == null) return;
 
         /* TODO: Ask if user would like to save current project first, before resetting system */
         VisualTestSystem.getInstance().resetSystem();
 
         try {
             VisualTestSystem.getInstance().getPersistenceService().load(dir);
+            AppSettingsService.getInstance().setLastProjectDirectory(dir);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -137,5 +250,15 @@ public class MainMenuBarUi extends MenuBar {
         chooser.setInitialDirectory(new File(System.getProperty("user.dir")));
 
         return chooser.showDialog(getScene().getWindow());
+    }
+
+    private void handleRun() {
+        Diagram diagram = diagramRepository.selectedDiagramProperty().get();
+        if (diagram != null)
+            runtime.queueTask(new ExecuteTask(diagram));
+    }
+
+    private void handleStop() {
+        runtime.stopCurrentTask();
     }
 }

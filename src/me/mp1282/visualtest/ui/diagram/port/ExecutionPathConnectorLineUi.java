@@ -3,47 +3,48 @@ package me.mp1282.visualtest.ui.diagram.port;
 import javafx.beans.property.*;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
-import me.mp1282.visualtest.system.diagram.DiagramNode;
 import me.mp1282.visualtest.ui.diagram.IDiagramElement;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.other.ArrowLineUi;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
-import me.mp1282.visualtest.util.PropertyHelper;
+import me.mp1282.visualtest.util.ObservableBounds;
 
-import java.util.List;
 import java.util.function.Consumer;
 
 public class ExecutionPathConnectorLineUi extends ArrowLineUi implements IConnectorUi, ISelectableUi, IDiagramElement {
 
+    public enum PathState { NEUTRAL, TAKEN, SKIPPED }
+
     private static final Color DEFAULT_COLOUR  = Color.BLACK;
+    private static final Color TAKEN_COLOUR    = Color.web("#00CC44");
+    private static final Color SKIPPED_COLOUR  = Color.color(0.7, 0.7, 0.7, 0.5);
     private static final Color SELECTED_COLOUR = Color.RED;
     private static final int DEFAULT_WIDTH = 5;
     private static final int HOVERED_WIDTH = 10;
 
     private final DiagramNodeUi sourceNodeUi;
     private final DiagramNodeUi targetNodeUi;
+    private final int branchIndex;
 
     private final BooleanProperty selected;
+    private PathState pathState = PathState.NEUTRAL;
 
     private Consumer<MouseEvent> mouseClickConsumer;
 
-    public ExecutionPathConnectorLineUi(DiagramNodeUi sourceNodeUi, DiagramNodeUi targetNodeUi) {
+    public ExecutionPathConnectorLineUi(DiagramNodeUi sourceNodeUi, int branchIndex, DiagramNodeUi targetNodeUi) {
         this.sourceNodeUi = sourceNodeUi;
         this.targetNodeUi = targetNodeUi;
+        this.branchIndex  = branchIndex;
 
         this.selected = new SimpleBooleanProperty();
 
-        final DiagramNode sourceNode = sourceNodeUi.getNode();
-        final DiagramNode targetNode = targetNodeUi.getNode();
-
-        /* When either of the nodes' positions change, recalculate the start and end positions */
-        PropertyHelper.addListenerForEach(
-                List.of(sourceNode.xProperty(), sourceNode.yProperty(), sourceNode.widthProperty(), sourceNode.heightProperty(),
-                        targetNode.xProperty(), targetNode.yProperty(), targetNode.widthProperty(), targetNode.heightProperty()),
-                _ -> recalculateStartAndEndPositions());
-
-        /* Calculate default start and end positions */
-        recalculateStartAndEndPositions();
+        /* Bind start/end positions to the execution path port areas on each node */
+        final ObservableBounds src = sourceNodeUi.getExecutionPathPortAreaProperty(branchIndex);
+        final ObservableBounds tgt = targetNodeUi.getExecutionPathPortAreaProperty(-1);
+        startXProperty().bind(src.centerXProperty());
+        startYProperty().bind(src.centerYProperty());
+        endXProperty()  .bind(tgt.centerXProperty());
+        endYProperty()  .bind(tgt.centerYProperty());
 
 //        hoverProperty().addListener((_, _, hovered) -> {
 //            setStrokeWidth(hovered ? HOVERED_WIDTH : DEFAULT_WIDTH);
@@ -52,7 +53,28 @@ public class ExecutionPathConnectorLineUi extends ArrowLineUi implements IConnec
 //            targetNodeUi.hoveredDataPortProperty().set(hovered ? targetPort : null);
 //        });
 
-        selected.addListener((_, _, selected) -> setColour(selected ? SELECTED_COLOUR : DEFAULT_COLOUR));
+        selected.addListener((_, _, _) -> updateColour());
+    }
+
+    public void setPathState(PathState state) {
+        this.pathState = state;
+        updateColour();
+    }
+
+    private void updateColour() {
+        if (selected.get()) {
+            setColour(SELECTED_COLOUR);
+        } else if (pathState == PathState.TAKEN) {
+            setColour(TAKEN_COLOUR);
+        } else if (pathState == PathState.SKIPPED) {
+            setColour(SKIPPED_COLOUR);
+        } else {
+            setColour(DEFAULT_COLOUR);
+        }
+    }
+
+    public int getBranchIndex() {
+        return branchIndex;
     }
 
     public DiagramNodeUi getSourceNodeUi() {
@@ -66,20 +88,6 @@ public class ExecutionPathConnectorLineUi extends ArrowLineUi implements IConnec
     @Override
     public BooleanProperty selectedProperty() {
         return selected;
-    }
-
-    public boolean equals(DiagramNodeUi nodeA, DiagramNodeUi nodeB) {
-        boolean nodesEqual =
-                (sourceNodeUi.equals(nodeA) && targetNodeUi.equals(nodeB)) ||
-                        (sourceNodeUi.equals(nodeB) && targetNodeUi.equals(nodeA));
-        return nodesEqual;
-    }
-
-    private void recalculateStartAndEndPositions() {
-        setStartX(sourceNodeUi.getNode().xProperty().get() + sourceNodeUi.getNode().widthProperty ().get() / 2D);
-        setStartY(sourceNodeUi.getNode().yProperty().get() + sourceNodeUi.getNode().heightProperty().get() / 2D);
-        setEndX  (targetNodeUi.getNode().xProperty().get() + targetNodeUi.getNode().widthProperty ().get() / 2D);
-        setEndY  (targetNodeUi.getNode().yProperty().get() + targetNodeUi.getNode().heightProperty().get() / 2D);
     }
 
     @Override
@@ -113,10 +121,5 @@ public class ExecutionPathConnectorLineUi extends ArrowLineUi implements IConnec
 
     public void setMouseClickConsumer(Consumer<MouseEvent> mouseClickConsumer) {
         this.mouseClickConsumer = mouseClickConsumer;
-    }
-
-    @Override
-    public int getZOrder() {
-        return 2;
     }
 }

@@ -4,6 +4,7 @@ import me.mp1282.visualtest.system.diagram.DiagramRepository;
 import me.mp1282.visualtest.system.diagram.runtime.RuntimeEnvironmentService;
 import me.mp1282.visualtest.system.executable.IExecutableTypeHolder;
 import me.mp1282.visualtest.system.inbuilt.InbuiltMethodRepository;
+import me.mp1282.visualtest.system.inbuilt.SpecialExecutableRepository;
 import me.mp1282.visualtest.system.jarload.LoadedJarRepository;
 import me.mp1282.visualtest.system.persistence.PersistenceService;
 
@@ -18,7 +19,7 @@ import java.util.Map;
 public class VisualTestSystem {
 
     public static final int SYSTEM_VERSION_MAJOR = 0;
-    public static final int SYSTEM_VERSION_MINOR = 1;
+    public static final int SYSTEM_VERSION_MINOR = 3;
 
     /* Singleton class */
     private static VisualTestSystem INSTANCE;
@@ -38,6 +39,7 @@ public class VisualTestSystem {
 
     /* Data repositories */
     private final InbuiltMethodRepository inbuiltMethodRepository;
+    private final SpecialExecutableRepository specialExecutableRepository;
     private final LoadedJarRepository jarRepository;
     private final DiagramRepository diagramRepository;
     private final Map<String, IExecutableTypeHolder<?>> dataHolderRegistry;
@@ -52,12 +54,15 @@ public class VisualTestSystem {
 
         /* Data repositories */
         this.inbuiltMethodRepository = new InbuiltMethodRepository();
+        this.specialExecutableRepository = new SpecialExecutableRepository();
         this.jarRepository = new LoadedJarRepository();
         this.diagramRepository = new DiagramRepository();
+
         this.dataHolderRegistry = Map.of(
-            inbuiltMethodRepository.getType(), inbuiltMethodRepository,
-            jarRepository          .getType(), jarRepository,
-            diagramRepository      .getType(), diagramRepository
+            inbuiltMethodRepository    .getType(), inbuiltMethodRepository,
+            specialExecutableRepository.getType(), specialExecutableRepository,
+            jarRepository              .getType(), jarRepository,
+            diagramRepository          .getType(), diagramRepository
         );
 
         /* Services */
@@ -71,6 +76,10 @@ public class VisualTestSystem {
 
     public InbuiltMethodRepository getInbuiltMethodRepository() {
         return inbuiltMethodRepository;
+    }
+
+    public SpecialExecutableRepository getSpecialExecutableRepository() {
+        return specialExecutableRepository;
     }
 
     public LoadedJarRepository getJarRepository() {

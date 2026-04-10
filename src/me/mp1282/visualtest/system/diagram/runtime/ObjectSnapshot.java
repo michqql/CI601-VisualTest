@@ -28,6 +28,11 @@ public class ObjectSnapshot {
         this.bytes = bos.toByteArray();
     }
 
+    public ObjectSnapshot(Class<?> type, byte[] bytes) {
+        this.type = type;
+        this.bytes = bytes;
+    }
+
     public byte[] getBytes() {
         return bytes;
     }

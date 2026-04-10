@@ -4,7 +4,7 @@ import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import me.mp1282.visualtest.system.VisualTestSystem;
-import me.mp1282.visualtest.system.inbuilt.InbuiltMethod;
+import me.mp1282.visualtest.system.inbuilt.InbuiltMethodExecutable;
 import me.mp1282.visualtest.ui.other.ExecutableCellUi;
 
 public class InbuiltExecutableListUi extends TreeView<Object> {
@@ -39,8 +39,8 @@ public class InbuiltExecutableListUi extends TreeView<Object> {
                 if (item instanceof String s) {
                     setText(s);
                     setGraphic(null);
-                } else if (item instanceof InbuiltMethod inbuiltMethod) {
-                    ExecutableCellUi.handle(this, inbuiltMethod);
+                } else if (item instanceof InbuiltMethodExecutable inbuiltMethodExecutable) {
+                    ExecutableCellUi.handle(this, inbuiltMethodExecutable);
                 }
             }
         });

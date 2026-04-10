@@ -6,7 +6,6 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.paint.Color;
-import me.mp1282.visualtest.system.executable.DataPort;
 import me.mp1282.visualtest.system.executable.Executable;
 import me.mp1282.visualtest.ui.executable.ExecutableUi;
 import me.mp1282.visualtest.util.DragContext;
@@ -17,28 +16,28 @@ public class ExecutableCellUi {
         final ExecutableUi ui = new ExecutableUi(executable);
         final StringBuilder nameBuilder = new StringBuilder(executable.getName());
         nameBuilder.append('(');
-        for(DataPort inputDataPort : executable.getInputs()) {
-            nameBuilder
-                    .append(inputDataPort.dataTypeDescriptor())
-                    .append(' ')
-                    .append(inputDataPort.name())
-                    .append(", ");
-        }
-
-        if(executable.getNumberOfInputs() > 0)
-            nameBuilder.setLength(nameBuilder.length() - 2);
-        nameBuilder.append(") => ");
-
-        for(DataPort outputDataPort : executable.getOutputs()) {
-            nameBuilder
-                    .append(outputDataPort.dataTypeDescriptor())
-                    .append(' ')
-                    .append(outputDataPort.name())
-                    .append(", ");
-        }
-
-        if(executable.getNumberOfOutputs() > 0)
-            nameBuilder.setLength(nameBuilder.length() - 2);
+//        for(DataPort inputDataPort : executable.getInputs()) {
+//            nameBuilder
+//                    .append(inputDataPort.dataTypeDescriptor())
+//                    .append(' ')
+//                    .append(inputDataPort.name())
+//                    .append(", ");
+//        }
+//
+//        if(executable.getNumberOfInputs() > 0)
+//            nameBuilder.setLength(nameBuilder.length() - 2);
+//        nameBuilder.append(") => ");
+//
+//        for(DataPort outputDataPort : executable.getOutputs()) {
+//            nameBuilder
+//                    .append(outputDataPort.dataTypeDescriptor())
+//                    .append(' ')
+//                    .append(outputDataPort.name())
+//                    .append(", ");
+//        }
+//
+//        if(executable.getNumberOfOutputs() > 0)
+//            nameBuilder.setLength(nameBuilder.length() - 2);
 
         cell.setGraphic(ui);
         cell.setText(nameBuilder.toString());

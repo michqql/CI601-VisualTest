@@ -2,31 +2,39 @@ package me.mp1282.visualtest.system.inbuilt;
 
 import me.mp1282.visualtest.system.IReset;
 import me.mp1282.visualtest.system.executable.IExecutableTypeHolder;
-import me.mp1282.visualtest.system.inbuilt.category.BooleanLogicInbuiltMethods;
-import me.mp1282.visualtest.system.inbuilt.category.CollectionsInbuiltMethods;
-import me.mp1282.visualtest.system.inbuilt.category.NumberInbuiltMethods;
-import me.mp1282.visualtest.system.inbuilt.category.RandomInbuiltMethods;
-import me.mp1282.visualtest.system.persistence.IPersistenceHandler;
+import me.mp1282.visualtest.system.inbuilt.category.*;
 import me.mp1282.visualtest.util.Pair;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
-public class InbuiltMethodRepository implements IReset, IExecutableTypeHolder<InbuiltMethod> {
+public class InbuiltMethodRepository implements IReset, IExecutableTypeHolder<InbuiltMethodExecutable> {
 
     private static final Set<Class<?>> CLASS_REGISTRY = new HashSet<>();
     /* Static constructor to add all classes that provide inbuilt functions
      * to the registry that will be parsed when this class is instantiated.
      */
     static {
+        CLASS_REGISTRY.add(TestInbuiltMethods.class);
+
         CLASS_REGISTRY.add(RandomInbuiltMethods.class);
         CLASS_REGISTRY.add(BooleanLogicInbuiltMethods.class);
-        CLASS_REGISTRY.add(NumberInbuiltMethods.class);
+        CLASS_REGISTRY.add(IntegerInbuiltMethods.class);
+        CLASS_REGISTRY.add(LongInbuiltMethods.class);
+        CLASS_REGISTRY.add(FloatInbuiltMethods.class);
+        CLASS_REGISTRY.add(DoubleInbuiltMethods.class);
+        CLASS_REGISTRY.add(MathInbuiltMethods.class);
+        CLASS_REGISTRY.add(StringInbuiltMethods.class);
         CLASS_REGISTRY.add(CollectionsInbuiltMethods.class);
+        CLASS_REGISTRY.add(ObjectInbuiltMethods.class);
+        CLASS_REGISTRY.add(CharacterInbuiltMethods.class);
+        CLASS_REGISTRY.add(TimeInbuiltMethods.class);
+        CLASS_REGISTRY.add(FileInbuiltMethods.class);
+        CLASS_REGISTRY.add(LoggingInbuiltMethods.class);
     }
 
-    private final List<Pair<InbuiltFunctionProvider, List<InbuiltMethod>>> repository;
+    private final List<Pair<InbuiltFunctionProvider, List<InbuiltMethodExecutable>>> repository;
 
     public InbuiltMethodRepository() {
         this.repository = new ArrayList<>();
@@ -38,12 +46,12 @@ public class InbuiltMethodRepository implements IReset, IExecutableTypeHolder<In
                 continue;
             }
 
-            List<InbuiltMethod> methodList = new ArrayList<>();
+            List<InbuiltMethodExecutable> methodList = new ArrayList<>();
 
             for(Method method : clazz.getDeclaredMethods()) {
                 /* Only static methods should be considered inbuilt functions */
                 if(Modifier.isStatic(method.getModifiers())) {
-                    InbuiltMethod exe = new InbuiltMethod(annotation, method);
+                    InbuiltMethodExecutable exe = new InbuiltMethodExecutable(annotation, method);
                     exe.init(this);
                     methodList.add(exe);
                 }
@@ -53,7 +61,7 @@ public class InbuiltMethodRepository implements IReset, IExecutableTypeHolder<In
         }
     }
 
-    public List<Pair<InbuiltFunctionProvider, List<InbuiltMethod>>> getRepository() {
+    public List<Pair<InbuiltFunctionProvider, List<InbuiltMethodExecutable>>> getRepository() {
         return repository;
     }
 
@@ -63,9 +71,9 @@ public class InbuiltMethodRepository implements IReset, IExecutableTypeHolder<In
     }
 
     @Override
-    public Optional<InbuiltMethod> findExecutableByPersistenceId(String persistenceId) {
-        for(Pair<InbuiltFunctionProvider, List<InbuiltMethod>> pair : repository) {
-            for(InbuiltMethod method : pair.value()) {
+    public Optional<InbuiltMethodExecutable> findExecutableByPersistenceId(String persistenceId) {
+        for(Pair<InbuiltFunctionProvider, List<InbuiltMethodExecutable>> pair : repository) {
+            for(InbuiltMethodExecutable method : pair.value()) {
                 if(method.getPersistenceId().equals(persistenceId))
                     return Optional.of(method);
             }

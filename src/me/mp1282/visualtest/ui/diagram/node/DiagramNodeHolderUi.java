@@ -2,17 +2,11 @@ package me.mp1282.visualtest.ui.diagram.node;
 
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.geometry.Point2D;
 import javafx.scene.Node;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import me.mp1282.visualtest.system.diagram.Diagram;
-import me.mp1282.visualtest.system.diagram.DiagramNode;
+import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.ui.diagram.IDiagramElement;
-import me.mp1282.visualtest.ui.diagram.helper.ConnectionHelper;
-import me.mp1282.visualtest.ui.diagram.helper.SelectionHelper;
-import me.mp1282.visualtest.ui.diagram.port.DataPortArea;
-import me.mp1282.visualtest.util.MouseDelta;
 import me.mp1282.visualtest.util.ReadOnlyMap;
 
 import java.util.HashMap;
@@ -22,31 +16,33 @@ import java.util.function.Consumer;
  */
 public class DiagramNodeHolderUi extends Pane {
 
-    private final ConnectionHelper connectionHelper;
-    private final SelectionHelper selectionHelper;
-
     /* A lookup map to find the UI element from the DiagramNode object */
     private final DiagramNodeHashMap<DiagramNode, DiagramNodeUi> nodeToUiMap;
 
-    private Consumer<DiagramNodeUi> onAddConsumer;
-    private Consumer<DiagramNodeUi> onRemoveConsumer;
+    private final Diagram diagram;
+    private final Consumer<DiagramNodeUi> onAddConsumer;
+    private final Consumer<DiagramNodeUi> onRemoveConsumer;
 
     public DiagramNodeHolderUi(final Diagram diagram,
-                               ConnectionHelper connectionHelper, SelectionHelper selectionHelper,
                                Consumer<DiagramNodeUi> onAddConsumer, Consumer<DiagramNodeUi> onRemoveConsumer) {
-        this.connectionHelper = connectionHelper;
-        this.selectionHelper = selectionHelper;
+        this.diagram = diagram;
         this.nodeToUiMap = new DiagramNodeHashMap<>();
         this.onAddConsumer = onAddConsumer;
         this.onRemoveConsumer = onRemoveConsumer;
+        setPickOnBounds(false);
 
-        /* For each node currently in the diagram, add a UI element */
-        for(DiagramNode node : diagram.nodesProperty())
-            add(node);
-
-        /* Listen for changes in the diagram node's map and add/remove children UI as appropriate */
+        /* Listen for future changes — initial nodes are added via populate() */
         diagram.nodesProperty().addListener((ListChangeListener<? super DiagramNode>) this::onListChange);
+    }
 
+    /**
+     * Adds a {@link DiagramNodeUi} for every node already present in the diagram.
+     * Must be called after all collaborators (e.g. {@link me.mp1282.visualtest.ui.diagram.port.ConnectorHolderUi})
+     * have been constructed so that the {@code onAddConsumer} callback can safely reference them.
+     */
+    public void populate() {
+        for (DiagramNode node : diagram.nodesProperty())
+            add(node);
     }
 
     public ReadOnlyMap<DiagramNode, DiagramNodeUi> getNodeToUiMap() {

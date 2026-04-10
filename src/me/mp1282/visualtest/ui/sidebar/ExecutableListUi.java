@@ -6,6 +6,7 @@ import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import me.mp1282.visualtest.system.VisualTestSystem;
 import me.mp1282.visualtest.system.event.EventBus;
 import me.mp1282.visualtest.system.event.types.ClassSelectedEvent;
 import me.mp1282.visualtest.system.executable.Executable;
@@ -22,7 +23,11 @@ public class ExecutableListUi extends VBox {
         inbuiltTab.setClosable(false);
         inbuiltTab.setContent(new InbuiltExecutableListUi());
 
-        this.tabPane = new TabPane(inbuiltTab);
+        Tab specialTab = new Tab("Special");
+        specialTab.setClosable(false);
+        specialTab.setContent(createList(VisualTestSystem.getInstance().getSpecialExecutableRepository().getRepository()));
+
+        this.tabPane = new TabPane(inbuiltTab, specialTab);
         VBox.setVgrow(tabPane, Priority.ALWAYS);
 
         getChildren().add(tabPane);
@@ -44,7 +49,7 @@ public class ExecutableListUi extends VBox {
         /* Otherwise, create a new tab for this class */
         Tab classTab = new Tab(clazz.getSimpleName());
         classTab.setUserData(clazz);
-        classTab.setContent(createList(classSelectedEvent.getLoadedClass().getMethodMap().values()));
+        classTab.setContent(createList(classSelectedEvent.getLoadedClass().getMethods()));
 
         tabPane.getTabs().add(classTab);
         tabPane.getSelectionModel().select(classTab);

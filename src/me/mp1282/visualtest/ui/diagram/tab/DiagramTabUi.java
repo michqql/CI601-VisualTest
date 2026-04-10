@@ -1,49 +1,52 @@
 package me.mp1282.visualtest.ui.diagram.tab;
 
-import javafx.event.ActionEvent;
-import javafx.geometry.Pos;
+import javafx.geometry.Orientation;
 import javafx.scene.control.*;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.stage.WindowEvent;
 import me.mp1282.visualtest.system.VisualTestSystem;
 import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.DiagramRefExecutable;
 import me.mp1282.visualtest.system.diagram.DiagramRepository;
+import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.event.EventBus;
 import me.mp1282.visualtest.system.event.types.DiagramSelectedEvent;
 import me.mp1282.visualtest.ui.diagram.DiagramUi;
-import me.mp1282.visualtest.ui.other.ZoomLevelMenuItemUi;
-import me.mp1282.visualtest.util.DiagramZoomLevel;
-
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.List;
+import me.mp1282.visualtest.ui.diagram.runtime.DiagramExecutionContext;
+import me.mp1282.visualtest.ui.diagram.runtime.DiagramRunResultsUi;
 
 public class DiagramTabUi extends Tab {
 
     private static final String ADD_TO_CURRENT_DIAGRAM_SECRET = "add-to-current-diagram";
-    private static final String ZOOM_LEVEL_SECRET = "zoom-level";
-    private static final NumberFormat DOUBLE_FORMATTER = new DecimalFormat("#0.00");
 
     private final DiagramRepository diagramRepository;
     private final Diagram diagram;
-    private final DiagramUi ui;
+    private final DiagramUi diagramUi;
+    private final DiagramExecutionContext executionContext;
 
     private final Label unsavedIndicator;
-    private final List<ZoomLevelMenuItemUi> zoomLevelMenuItems;
 
     public DiagramTabUi(Diagram diagram, DiagramUi ui) {
-        super(diagram.nameProperty().get(), ui);
+        super(diagram.nameProperty().get());
         setUserData(diagram);
 
         this.diagramRepository = VisualTestSystem.getInstance().getDiagramRepository();
         this.diagram = diagram;
-        this.ui = ui;
+        this.diagramUi = ui;
+        this.executionContext = new DiagramExecutionContext(
+                diagram, VisualTestSystem.getInstance().getRuntimeEnvironmentService());
 
         this.unsavedIndicator = new Label("*");
-        this.zoomLevelMenuItems = new ArrayList<>();
+
+        /* Build the embedded layout: canvas on top, results panel below */
+        DiagramRunResultsUi resultsPanel = new DiagramRunResultsUi(executionContext);
+        SplitPane verticalSplit = new SplitPane(ui, resultsPanel);
+        verticalSplit.setOrientation(Orientation.VERTICAL);
+        verticalSplit.setDividerPositions(0.75);
+        setContent(verticalSplit);
+
+        /* Apply execution overlay when a task for this diagram completes */
+        executionContext.lastCompletedTaskProperty().addListener((_, _, task) -> {
+            if (task != null) ui.applyExecutionResult(task);
+        });
 
         createContextMenu();
 
@@ -60,42 +63,14 @@ public class DiagramTabUi extends Tab {
         ContextMenu tabContextMenu = new ContextMenu();
 
         MenuItem renameItem = new MenuItem("Rename Diagram");
-        renameItem.setOnAction(event -> onClickRenameDiagram());
-
-        Menu zoomLevelMenu = new Menu("Zoom");
-        zoomLevelMenu.setUserData(ZOOM_LEVEL_SECRET);
-        for(DiagramZoomLevel zoom : DiagramZoomLevel.values()) {
-            ZoomLevelMenuItemUi zoomLevelItem = new ZoomLevelMenuItemUi(DOUBLE_FORMATTER.format(zoom.getZoom()) + "x");
-            zoomLevelItem.setUserData(zoom);
-            zoomLevelItem.addEventHandler(ActionEvent.ACTION, this::handleZoomLevelSelected);
-
-            zoomLevelMenuItems.add(zoomLevelItem);
-        }
-        zoomLevelMenu.getItems().addAll(zoomLevelMenuItems);
+        renameItem.setOnAction(_ -> onClickRenameDiagram());
 
         MenuItem addToCurrentDiagramItem = new MenuItem("Add to Current Diagram");
         addToCurrentDiagramItem.setUserData(ADD_TO_CURRENT_DIAGRAM_SECRET);
         addToCurrentDiagramItem.setOnAction(_ -> onClickAddToCurrentDiagram());
 
-        tabContextMenu.setOnShowing(_ -> updateZoomMenuItems());
-
-        tabContextMenu.getItems().addAll(renameItem, zoomLevelMenu, addToCurrentDiagramItem);
+        tabContextMenu.getItems().addAll(renameItem, addToCurrentDiagramItem);
         setContextMenu(tabContextMenu);
-    }
-
-    private void updateZoomMenuItems() {
-        DiagramZoomLevel zoom = diagram.zoomLevelProperty().get();
-
-        for(ZoomLevelMenuItemUi zoomLevelItem : zoomLevelMenuItems) {
-            zoomLevelItem.currentZoomLevelProperty().set(zoom.equals(zoomLevelItem.getUserData()));
-        }
-    }
-
-    private void handleZoomLevelSelected(ActionEvent e) {
-        if(e.getSource() instanceof MenuItem item && item.getUserData() instanceof DiagramZoomLevel zoom) {
-            diagram.zoomLevelProperty().set(zoom);
-            updateZoomMenuItems();
-        }
     }
 
     private void handleUnsavedChange(boolean unsaved) {
@@ -135,7 +110,8 @@ public class DiagramTabUi extends Tab {
 
     private void onClickAddToCurrentDiagram() {
         final DiagramRefExecutable refExe = diagramRepository.getReferenceExecutable(diagram);
-        diagramRepository.selectedDiagramProperty().get().placeExecutable(refExe);
+        final Diagram currentDiagram = diagramRepository.selectedDiagramProperty().get();
+        currentDiagram.nodesProperty().add(new DiagramNode(refExe));
     }
 
     private MenuItem getAddToCurrentDiagramMenuItem() {

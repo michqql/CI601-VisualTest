@@ -9,7 +9,7 @@ import me.mp1282.visualtest.util.Preconditions;
 import java.io.File;
 import java.util.Optional;
 
-public class LoadedJarRepository implements IReset, IExecutableTypeHolder<LoadedMethod> {
+public class LoadedJarRepository implements IReset, IExecutableTypeHolder<LoadedMethodExecutable> {
 
     private final ObservableList<LoadedJar> repository = FXCollections.observableArrayList();
 
@@ -20,8 +20,8 @@ public class LoadedJarRepository implements IReset, IExecutableTypeHolder<Loaded
             LoadedJar jar = new LoadedJar(file);
             /* Initialize all the LoadedMethod's */
             jar.getLoadedClassMap().values().forEach(clazz ->
-                    clazz.getMethodMap().values().forEach(method ->
-                            method.init(LoadedJarRepository.this)));
+                    clazz.getMethods().forEach(method ->
+                            method.init(this)));
 
             repository.add(jar);
             return Optional.of(jar);
@@ -44,7 +44,7 @@ public class LoadedJarRepository implements IReset, IExecutableTypeHolder<Loaded
     }
 
     @Override
-    public Optional<LoadedMethod> findExecutableByPersistenceId(String persistenceId) {
+    public Optional<LoadedMethodExecutable> findExecutableByPersistenceId(String persistenceId) {
         return Optional.empty();
     }
 

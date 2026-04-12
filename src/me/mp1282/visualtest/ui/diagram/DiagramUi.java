@@ -3,6 +3,7 @@ package me.mp1282.visualtest.ui.diagram;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.*;
@@ -43,6 +44,12 @@ public class DiagramUi extends Pane {
     private final DoubleProperty translateY;
     private final Scale nodeScale;
     private final Scale connectorScale;
+
+    /* Tracks whether Ctrl is physically held — more reliable than ScrollEvent.isControlDown(),
+     * which Windows trackpad drivers can set to true for ordinary two-finger scroll. */
+    private boolean ctrlDown = false;
+    private final EventHandler<KeyEvent> ctrlPressFilter   = e -> { if (e.getCode() == KeyCode.CONTROL) ctrlDown = true;  };
+    private final EventHandler<KeyEvent> ctrlReleaseFilter = e -> { if (e.getCode() == KeyCode.CONTROL) ctrlDown = false; };
 
     /* UI elements that aren't nodes and connected lines*/
     private final Canvas gridCanvas;
@@ -94,19 +101,12 @@ public class DiagramUi extends Pane {
 
         /* Listen for zoom level changes */
         UiPreferencesService.getInstance().zoomLevelProperty()
-                .addListener((_, _, level) -> {
-                    nodeScale.setX(level.getZoom());
-                    nodeScale.setY(level.getZoom());
-                    connectorScale.setX(level.getZoom());
-                    connectorScale.setY(level.getZoom());
-                    redrawGridCanvas();
-                });
-        /* Apply the current zoom level immediately */
+                .addListener((_, _, level) -> applyZoom(level.getZoom()));
+
+        /* Apply the saved zoom level at startup (no corrective pan — nothing is in view yet). */
         double initialZoom = UiPreferencesService.getInstance().zoomLevelProperty().get().getZoom();
-        nodeScale.setX(initialZoom);
-        nodeScale.setY(initialZoom);
-        connectorScale.setX(initialZoom);
-        connectorScale.setY(initialZoom);
+        nodeScale.setX(initialZoom);      nodeScale.setY(initialZoom);
+        connectorScale.setX(initialZoom); connectorScale.setY(initialZoom);
 
         /* Add event listeners to handle mouse events
          *
@@ -117,6 +117,19 @@ public class DiagramUi extends Pane {
         addEventFilter (MouseEvent.MOUSE_DRAGGED, this::handleMouseDraggedInEmptyArea);
         addEventFilter (MouseEvent.MOUSE_MOVED,   this::handleMouseMoveInEmptyArea);
         addEventFilter (ScrollEvent.SCROLL,       this::handleScroll);
+
+        /* Track physical Ctrl key state at the scene level so we aren't fooled by
+         * trackpad drivers that synthesise Ctrl+scroll for two-finger swipe gestures. */
+        sceneProperty().addListener((_, oldScene, newScene) -> {
+            if (oldScene != null) {
+                oldScene.removeEventFilter(KeyEvent.KEY_PRESSED,  ctrlPressFilter);
+                oldScene.removeEventFilter(KeyEvent.KEY_RELEASED, ctrlReleaseFilter);
+            }
+            if (newScene != null) {
+                newScene.addEventFilter(KeyEvent.KEY_PRESSED,  ctrlPressFilter);
+                newScene.addEventFilter(KeyEvent.KEY_RELEASED, ctrlReleaseFilter);
+            }
+        });
 
         /* Add event listeners to handle executable UI elements
          * being dragged over the diagram UI. When they are dragged over
@@ -231,18 +244,32 @@ public class DiagramUi extends Pane {
         }
     }
 
-    /* Handles CTRL+scroll to step through zoom levels */
+    /* Handles scroll events:
+     *   CTRL + scroll  → step through zoom levels
+     *   scroll (plain) → pan the diagram (supports trackpad two-finger swipe)
+     */
     private void handleScroll(ScrollEvent e) {
-        if (!e.isControlDown()) return;
+        if (ctrlDown) {
+            final DiagramZoomLevel[] levels = DiagramZoomLevel.values();
+            final DiagramZoomLevel current = UiPreferencesService.getInstance().zoomLevelProperty().get();
+            int idx = current.ordinal();
 
-        final DiagramZoomLevel[] levels = DiagramZoomLevel.values();
-        final DiagramZoomLevel current = UiPreferencesService.getInstance().zoomLevelProperty().get();
-        int idx = current.ordinal();
+            if (e.getDeltaY() > 0) idx = Math.min(idx + 1, levels.length - 1); /* scroll up = zoom in */
+            else                   idx = Math.max(idx - 1, 0);                  /* scroll down = zoom out */
 
-        if (e.getDeltaY() > 0) idx = Math.min(idx + 1, levels.length - 1); /* scroll up = zoom in */
-        else                   idx = Math.max(idx - 1, 0);                  /* scroll down = zoom out */
+            UiPreferencesService.getInstance().zoomLevelProperty().set(levels[idx]);
+        } else {
+            final double deltaX = e.getDeltaX();
+            final double deltaY = e.getDeltaY();
 
-        UiPreferencesService.getInstance().zoomLevelProperty().set(levels[idx]);
+            translateX.set(translateX.get() + deltaX);
+            translateY.set(translateY.get() + deltaY);
+
+            nodeHolderUi.translate(deltaX / nodeScale.getX(), deltaY / nodeScale.getX());
+
+            redrawGridCanvas();
+            connectionHelper.redrawConnectingLine();
+        }
         e.consume();
     }
 
@@ -346,6 +373,24 @@ public class DiagramUi extends Pane {
     public void clearExecutionResult() {
         connectorHolderUi.clearExecutionPathStates();
         overlayUi.clearOverlay();
+    }
+
+    private void applyZoom(double newZoom) {
+        double oldZoom = nodeScale.getX();
+        double cx = getWidth()  / 2.0;
+        double cy = getHeight() / 2.0;
+
+        /* Corrective pan: whatever was at the visual centre before zoom stays there after.
+         * panX/Y are in DiagramUi (scene) space; divide by newZoom to convert to local space. */
+        double panX = cx * (1.0 - newZoom / oldZoom);
+        double panY = cy * (1.0 - newZoom / oldZoom);
+        translateX.set(translateX.get() + panX);
+        translateY.set(translateY.get() + panY);
+        nodeHolderUi.translate(panX / newZoom, panY / newZoom);
+
+        nodeScale.setX(newZoom);      nodeScale.setY(newZoom);
+        connectorScale.setX(newZoom); connectorScale.setY(newZoom);
+        redrawGridCanvas();
     }
 
     private void redrawGridCanvas() {

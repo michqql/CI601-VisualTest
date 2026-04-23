@@ -17,6 +17,12 @@ public class ObjectSnapshot {
     private Object cachedObject;
 
     public ObjectSnapshot(Object object) {
+        if (object == null) {
+            this.type  = null;
+            this.bytes = null;
+            return;
+        }
+
         this.type = object.getClass();
         KRYO_LIB.register(type);
 
@@ -38,6 +44,7 @@ public class ObjectSnapshot {
     }
 
     public Object getObject() {
+        if (bytes == null) return null;
         if(cachedObject == null) {
             Input input = new Input(new ByteArrayInputStream(bytes));
             cachedObject = KRYO_LIB.readObject(input, type);

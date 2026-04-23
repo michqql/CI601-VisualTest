@@ -10,6 +10,7 @@ import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
 import me.mp1282.visualtest.system.diagram.port.IDataPort;
 import me.mp1282.visualtest.system.event.EventBus;
+import me.mp1282.visualtest.ui.UiPreferencesService;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.event.DataPortMouseEvent;
 
@@ -42,7 +43,10 @@ public class DataPortComponent extends StackPane {
                 bg.setStroke(hover ? STROKE_VISIBLE : STROKE_HIDDEN));
 
         /* The foreground line that is representing the data port itself */
-        final Line fg = new Line(/* X => */ 0, /* Y => */ SIDE_LENGTH / 2, /* End X => */ SIDE_LENGTH, /* End Y => */ SIDE_LENGTH / 2);
+        final boolean vertical = UiPreferencesService.getInstance().verticalOrientationProperty().get();
+        final Line fg = vertical
+                ? new Line(SIDE_LENGTH / 2, 0, SIDE_LENGTH / 2, SIDE_LENGTH)  /* vertical line */
+                : new Line(0, SIDE_LENGTH / 2, SIDE_LENGTH, SIDE_LENGTH / 2); /* horizontal line */
         fg.setStrokeWidth(LINE_WIDTH);
         fg.setStroke(Color.RED);
         fg.setMouseTransparent(true);

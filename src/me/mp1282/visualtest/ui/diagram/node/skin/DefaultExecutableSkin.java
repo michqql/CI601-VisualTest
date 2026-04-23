@@ -10,6 +10,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import me.mp1282.visualtest.system.diagram.port.IDataPort;
 import me.mp1282.visualtest.system.executable.Executable;
+import me.mp1282.visualtest.ui.UiPreferencesService;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.diagram.node.skin.component.DataPortComponent;
 import me.mp1282.visualtest.ui.diagram.node.skin.component.ExecutionPathPortComponent;
@@ -40,53 +41,62 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
 
     protected Node createRoot() {
         final DiagramNodeUi nodeUi = getSkinnable();
-        final HBox root = new HBox(); /* The root container — left-to-right flow */
-        root.setBorder(new Border(new BorderStroke(
-                Color.BLACK, BorderStrokeStyle.DOTTED, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
+        final boolean vertical = UiPreferencesService.getInstance().verticalOrientationProperty().get();
+        final Executable exe = nodeUi.getNode().getExecutable();
 
-        final VBox inputs = new VBox(); /* Left column: execution path IN port and data port inputs */
-        inputs.setAlignment(Pos.CENTER_RIGHT);
-        inputs.setSpacing(5);
-        /* Execution path IN port at the top of the inputs column */
-        inputs.getChildren().add(execPathPortNode(nodeUi.getNode().getExecutable(), -1));
-        /* Populate input data ports */
-        for(IDataPort<?> input : nodeUi.getNode().getInputs()) {
-            inputs.getChildren().add(dataPortNode(input, true));
+        /* Inputs container: left column (horizontal) or top row (vertical) */
+        final Pane inputs;
+        if (vertical) {
+            HBox hb = new HBox(5);
+            hb.setAlignment(Pos.BOTTOM_CENTER);
+            inputs = hb;
+        } else {
+            VBox vb = new VBox(5);
+            vb.setAlignment(Pos.CENTER_RIGHT);
+            inputs = vb;
         }
+        inputs.getChildren().add(execPathPortNode(exe, -1));
+        for (IDataPort<?> input : nodeUi.getNode().getInputs())
+            inputs.getChildren().add(dataPortNode(input, true));
 
-        final VBox outputs = new VBox(); /* Right column: execution path OUT port(s) and data port outputs */
-        outputs.setAlignment(Pos.CENTER_LEFT);
-        outputs.setSpacing(5);
-        /* Execution path OUT port(s) at the top of the outputs column.
+        /* Outputs container: right column (horizontal) or bottom row (vertical).
          * Use nodeAfterPaths.size() rather than getExecutionPathOutputCount() so that
          * nodes whose port list was resized after construction render correctly. */
-        final Executable exe = nodeUi.getNode().getExecutable();
+        final Pane outputs;
+        if (vertical) {
+            HBox hb = new HBox(5);
+            hb.setAlignment(Pos.TOP_CENTER);
+            outputs = hb;
+        } else {
+            VBox vb = new VBox(5);
+            vb.setAlignment(Pos.CENTER_LEFT);
+            outputs = vb;
+        }
         for (int i = 0; i < nodeUi.getNode().getNodeAfterPaths().size(); i++)
             outputs.getChildren().add(execPathPortNode(exe, i));
-
-        /* Populate output data ports */
-        for(IDataPort<?> output : nodeUi.getNode().getOutputs()) {
+        for (IDataPort<?> output : nodeUi.getNode().getOutputs())
             outputs.getChildren().add(dataPortNode(output, false));
-        }
 
-        /* Construct the main content */
-        final StackPane main = new StackPane(); /* Container for main content */
+        /* Main content */
+        final StackPane main = new StackPane();
         main.setPadding(new Insets(5));
         final Border normalBorder = new Border(new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, new CornerRadii(5), new BorderWidths(3)));
         final Border selectedBorder = new Border(new BorderStroke(Color.RED, BorderStrokeStyle.SOLID, new CornerRadii(5), new BorderWidths(3)));
         main.borderProperty().bind(nodeUi.selectedProperty().map(sel -> sel ? selectedBorder : normalBorder));
         createMainBody(main);
 
+        /* Root container: HBox for horizontal flow, VBox for vertical flow */
+        final Pane root = vertical ? new VBox() : new HBox();
+        root.setBorder(new Border(new BorderStroke(
+                Color.BLACK, BorderStrokeStyle.DOTTED, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
+
         /* Capture all mouse events on this pane, and fire them on the DiagramNodeUi */
         root.addEventHandler(MouseEvent.ANY, event -> {
             final DiagramNodeUi ui = getSkinnable();
-            /* Fire generic mouse event */
             ui.fireEvent(new ExecutableBodyMouseEvent(ExecutableBodyMouseEvent.ANY_MOUSE, ui, event));
-
-            /* If was mouse click event, fire mouse click specific event */
-            if(event.getEventType() == MouseEvent.MOUSE_CLICKED)
+            if (event.getEventType() == MouseEvent.MOUSE_CLICKED)
                 ui.fireEvent(new ExecutableBodyMouseEvent(ExecutableBodyMouseEvent.CLICK, ui, event));
-            else if(event.getEventType() == MouseEvent.MOUSE_PRESSED)
+            else if (event.getEventType() == MouseEvent.MOUSE_PRESSED)
                 ui.fireEvent(new ExecutableBodyMouseEvent(ExecutableBodyMouseEvent.PRESSED, ui, event));
         });
 
@@ -99,54 +109,66 @@ public class DefaultExecutableSkin extends SkinBase<DiagramNodeUi> {
      * Creates the UI node for an execution path port. If the executable provides a custom label
      * for this port, it is shown as a persistent text label. Otherwise, a hover-visible text
      * label showing "IN" or "OUT" is displayed when the node is hovered.
+     *
+     * Port placement follows the current orientation:
+     *   Horizontal — port at the outer edge, label toward the node centre (HBox wrapper).
+     *   Vertical   — port at the outer edge (top for IN, bottom for OUT), label toward centre (VBox wrapper).
      */
     protected Node execPathPortNode(Executable exe, int branchIndex) {
+        final boolean vertical = UiPreferencesService.getInstance().verticalOrientationProperty().get();
         final ExecutionPathPortComponent port = new ExecutionPathPortComponent(this, branchIndex);
         final String customLabel = exe.getExecutionPathLabel(branchIndex);
 
-        if (customLabel != null) {
-            final Text label = new Text(customLabel);
-            label.setStyle("-fx-font-size: 10;");
-            label.setMouseTransparent(true);
-            final HBox wrapper = new HBox(2);
-            if (branchIndex >= 0) { /* Output port — label left of port (toward node centre) */
-                wrapper.getChildren().addAll(label, port);
-            } else { /* Input port — port left (at edge), label right (toward node centre) */
+        final Text label = new Text(customLabel != null ? customLabel : (branchIndex < 0 ? "IN" : "OUT"));
+        label.setStyle("-fx-font-size: 10;");
+        label.setMouseTransparent(true);
+        if (customLabel == null)
+            label.visibleProperty().bind(getSkinnable().hoverProperty());
+
+        if (vertical) {
+            final VBox wrapper = new VBox(2);
+            if (branchIndex < 0) /* Input: port at top edge, label toward centre */
                 wrapper.getChildren().addAll(port, label);
-            }
+            else                 /* Output: label toward centre, port at bottom edge */
+                wrapper.getChildren().addAll(label, port);
             wrapper.setAlignment(Pos.CENTER);
             return wrapper;
         } else {
-            final String defaultLabel = branchIndex < 0 ? "IN" : "OUT";
-            final Text label = new Text(defaultLabel);
-            label.setStyle("-fx-font-size: 10;");
-            label.setMouseTransparent(true);
-            label.visibleProperty().bind(getSkinnable().hoverProperty());
             final HBox wrapper = new HBox(2);
-            if (branchIndex >= 0) { /* Output port — label left of port */
-                wrapper.getChildren().addAll(label, port);
-            } else { /* Input port — port left, label right */
+            if (branchIndex < 0) /* Input: port at left edge, label toward centre */
                 wrapper.getChildren().addAll(port, label);
-            }
+            else                 /* Output: label toward centre, port at right edge */
+                wrapper.getChildren().addAll(label, port);
             wrapper.setAlignment(Pos.CENTER);
             return wrapper;
         }
     }
 
     private Node dataPortNode(IDataPort<?> port, boolean isInput) {
+        final boolean vertical = UiPreferencesService.getInstance().verticalOrientationProperty().get();
         final DataPortComponent portComp = new DataPortComponent(this, port);
         final Text label = new Text(port.getType().getDataType().getSimpleName());
         label.setStyle("-fx-font-size: 10;");
         label.setMouseTransparent(true);
         label.visibleProperty().bind(getSkinnable().hoverProperty());
-        final HBox wrapper = new HBox(2);
-        if (isInput) { /* Port at left edge, label toward node centre */
-            wrapper.getChildren().addAll(portComp, label);
-        } else { /* Label toward node centre, port at right edge */
-            wrapper.getChildren().addAll(label, portComp);
+
+        if (vertical) {
+            final VBox wrapper = new VBox(2);
+            if (isInput) /* Port at top edge, label toward centre */
+                wrapper.getChildren().addAll(portComp, label);
+            else         /* Label toward centre, port at bottom edge */
+                wrapper.getChildren().addAll(label, portComp);
+            wrapper.setAlignment(Pos.CENTER);
+            return wrapper;
+        } else {
+            final HBox wrapper = new HBox(2);
+            if (isInput) /* Port at left edge, label toward centre */
+                wrapper.getChildren().addAll(portComp, label);
+            else         /* Label toward centre, port at right edge */
+                wrapper.getChildren().addAll(label, portComp);
+            wrapper.setAlignment(Pos.CENTER);
+            return wrapper;
         }
-        wrapper.setAlignment(Pos.CENTER);
-        return wrapper;
     }
 
     protected void createMainBody(StackPane parent) {

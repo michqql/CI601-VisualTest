@@ -7,6 +7,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Rectangle;
+import me.mp1282.visualtest.ui.UiPreferencesService;
 import me.mp1282.visualtest.ui.diagram.node.DiagramNodeUi;
 import me.mp1282.visualtest.ui.event.ExecutionPathPortMouseEvent;
 
@@ -38,12 +39,11 @@ public class ExecutionPathPortComponent extends StackPane {
         bg.hoverProperty().addListener((_, _, hover) ->
                 bg.setStroke(hover ? STROKE_VISIBLE : STROKE_HIDDEN));
 
-        /* Triangle indicator: pointing right to indicate left-to-right execution flow */
-        final Polygon fg = new Polygon(
-                PAD,              PAD,
-                PAD,              SIDE_LENGTH - PAD,
-                SIDE_LENGTH - PAD, SIDE_LENGTH / 2
-        );
+        /* Triangle indicator: points right for horizontal flow, down for vertical flow */
+        final boolean vertical = UiPreferencesService.getInstance().verticalOrientationProperty().get();
+        final Polygon fg = vertical
+                ? new Polygon(PAD, PAD, SIDE_LENGTH - PAD, PAD, SIDE_LENGTH / 2, SIDE_LENGTH - PAD)  /* pointing down */
+                : new Polygon(PAD, PAD, PAD, SIDE_LENGTH - PAD, SIDE_LENGTH - PAD, SIDE_LENGTH / 2); /* pointing right */
         fg.setFill(Color.BLACK);
         fg.setMouseTransparent(true);
 

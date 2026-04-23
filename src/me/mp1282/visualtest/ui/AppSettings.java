@@ -8,4 +8,5 @@ public class AppSettings {
     public String  lastProjectDirectory = null;
     public boolean explainMode          = false;
     public String  zoomLevel            = "DEFAULT";
+    public boolean verticalOrientation  = false;
 }

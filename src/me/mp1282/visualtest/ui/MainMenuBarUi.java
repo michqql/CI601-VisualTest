@@ -120,7 +120,11 @@ public class MainMenuBarUi extends MenuBar {
                 zoomMenu.getItems().add(item);
             }
 
-            viewMenu.getItems().addAll(explainItem, zoomMenu);
+            CheckMenuItem verticalOrientationItem = new CheckMenuItem("Vertical Orientation");
+            verticalOrientationItem.selectedProperty().bindBidirectional(
+                    UiPreferencesService.getInstance().verticalOrientationProperty());
+
+            viewMenu.getItems().addAll(explainItem, zoomMenu, new SeparatorMenuItem(), verticalOrientationItem);
         }
 
         getMenus().addAll(projectMenu, runMenu, viewMenu);
@@ -185,6 +189,15 @@ public class MainMenuBarUi extends MenuBar {
         UiPreferencesService.getInstance().zoomLevelProperty()
                 .addListener((_, _, val) -> {
                     appSettings.getSettings().zoomLevel = val.name();
+                    appSettings.save();
+                });
+
+        UiPreferencesService.getInstance().verticalOrientationProperty()
+                .set(appSettings.getSettings().verticalOrientation);
+
+        UiPreferencesService.getInstance().verticalOrientationProperty()
+                .addListener((_, _, val) -> {
+                    appSettings.getSettings().verticalOrientation = val;
                     appSettings.save();
                 });
 

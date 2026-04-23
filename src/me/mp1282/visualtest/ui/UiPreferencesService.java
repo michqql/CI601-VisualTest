@@ -12,10 +12,12 @@ public class UiPreferencesService {
     private final BooleanProperty explainMode = new SimpleBooleanProperty(false);
     private final ObjectProperty<DiagramZoomLevel> zoomLevel =
             new SimpleObjectProperty<>(DiagramZoomLevel.DEFAULT);
+    private final BooleanProperty verticalOrientation = new SimpleBooleanProperty(false);
 
     private UiPreferencesService() {}
 
     public static UiPreferencesService getInstance() { return INSTANCE; }
     public BooleanProperty explainModeProperty() { return explainMode; }
     public ObjectProperty<DiagramZoomLevel> zoomLevelProperty() { return zoomLevel; }
+    public BooleanProperty verticalOrientationProperty() { return verticalOrientation; }
 }

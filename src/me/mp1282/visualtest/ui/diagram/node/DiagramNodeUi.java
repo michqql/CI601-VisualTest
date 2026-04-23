@@ -8,6 +8,7 @@ import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.diagram.port.IDataPort;
 import me.mp1282.visualtest.system.diagram.port.InputParameter;
 import me.mp1282.visualtest.system.diagram.port.OutputReturn;
+import me.mp1282.visualtest.ui.UiPreferencesService;
 import me.mp1282.visualtest.ui.diagram.IDiagramElement;
 import me.mp1282.visualtest.ui.diagram.node.skin.SkinFactory;
 import me.mp1282.visualtest.ui.other.ISelectableUi;
@@ -60,6 +61,10 @@ public class DiagramNodeUi extends Control implements IDiagramElement, ISelectab
         /* TODO: Find a way to flip this expression because this will overwrite the node's properties */
         node.widthProperty().bind(widthProperty());   /* node.width  = this.width  */
         node.heightProperty().bind(heightProperty()); /* node.height = this.height */
+
+        /* Re-create the skin whenever the diagram orientation is toggled */
+        UiPreferencesService.getInstance().verticalOrientationProperty()
+                .addListener((_, _, _) -> setSkin(SkinFactory.createSkin(this)));
     }
 
     @Override

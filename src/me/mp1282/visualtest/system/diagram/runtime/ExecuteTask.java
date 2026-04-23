@@ -33,14 +33,15 @@ public class ExecuteTask {
     /* Performs a topological sort (Kahn's algorithm) of the diagram nodes.
      * Both data port edges and execution path edges are used as ordering constraints.
      * If a cycle is detected, an exception is thrown.
+     * Time complexity: O(V + E)
      */
     private void createExecutionOrder() {
         final List<DiagramNode> nodes = new ArrayList<>(diagram.nodesProperty());
         final Map<DiagramNode, Integer> indegree = new HashMap<>();
         final Queue<DiagramNode> next = new ArrayDeque<>();
 
-        /* 1. Calculate indegree by counting incoming data edges
-         * AND incoming execution path edges
+        /* 1. In-degree (number of incoming edges into a vertex) is calculated for
+         *    each node. A queue is created from nodes with an in-degree of zero.
          */
         for (DiagramNode node : nodes) {
             /* Incoming data edges */
@@ -53,12 +54,14 @@ public class ExecuteTask {
             if (node.getNodeBefore().getOther() != null)
                 indegree.compute(node, (_, degree) -> degree == null ? 1 : ++degree);
 
-            /* 2. Nodes with zero indegree are processed first */
+            /* Nodes with zero indegree are processed first */
             if (indegree.getOrDefault(node, 0) == 0)
                 next.add(node);
         }
 
-        /* 3. Process the queue — decrement neighbours and add newly zero-indegree nodes */
+        /* 2. Process the queue: the head is added to the ordered list, it's neighbours
+         *    (via output edges) have their in-degree decreased.
+         */
         while(!next.isEmpty()) {
             DiagramNode top = next.poll();
             this.executionOrder.add(top);
@@ -66,25 +69,31 @@ public class ExecuteTask {
             /* Decrement data-connected downstream nodes */
             for (OutputReturn output : top.getOutputs()) {
                 if(output.getTo() != null) {
-                    int resultingDegree = indegree.compute(output.getTo().getParentNode(),
-                            (_, degree) -> degree == null ? -1 : --degree);
-                    if(resultingDegree == 0)
-                        next.add(output.getTo().getParentNode());
+                    int resultingDegree = indegree.compute(
+                            /* Key          => */ output.getTo().getParentNode(),
+                            /* Mapping Func => */ (_, degree) -> degree == null ? -1 : --degree
+                    );
+
+                    if(resultingDegree == 0) next.add(output.getTo().getParentNode());
                 }
             }
 
-            /* Decrement execution-path-connected downstream nodes */
+            /* Decrement execution-path-connected downstream nodes,
+             * same operation as data-connections */
             for (ExecutionPath afterPath : top.getNodeAfterPaths()) {
                 if (afterPath.getOther() != null) {
-                    int resultingDegree = indegree.compute(afterPath.getOther(),
-                            (_, degree) -> degree == null ? -1 : --degree);
+                    int resultingDegree = indegree.compute(
+                            /* Key          => */ afterPath.getOther(),
+                            /* Mapping Func => */ (_, degree) -> degree == null ? -1 : --degree
+                    );
+
                     if (resultingDegree == 0)
                         next.add(afterPath.getOther());
                 }
             }
         }
 
-        /* Check for cycles */
+        /* 3. Check for cycles */
         if(executionOrder.size() != nodes.size())
             throw new RuntimeException("Cycle detected");
     }
@@ -115,11 +124,14 @@ public class ExecuteTask {
 
         final RunStep result = new RunStep(diagram, currentNode);
 
-        /* If this node is on a skipped branch, propagate nulls and forward the skip */
+        /* If this node is on a skipped branch, propagate skip flag */
         if (skippedNodes.contains(currentNode)) {
+            /* Propagate the skip to all output data connections */
             for (OutputReturn outputPort : currentNode.getOutputs()) {
-                if (outputPort.getTo() != null)
+                if (outputPort.getTo() != null) {
                     inputPortToDataMap.put(outputPort.getTo(), null);
+                    markSkipped(outputPort.getTo().getParentNode());
+                }
             }
             /* Propagate the skip along all outgoing execution paths */
             for (ExecutionPath afterPath : currentNode.getNodeAfterPaths()) {
@@ -248,19 +260,8 @@ public class ExecuteTask {
         markSkipped(loopNode.getNodeAfterPath(ForLoopExecutable.LOOP_INDEX).getOther());
     }
 
-    /* BFS from start, marking all reachable nodes (via execution paths) as skipped */
     private void markSkipped(DiagramNode start) {
-        if (start == null) return;
-        Queue<DiagramNode> toProcess = new LinkedList<>();
-        toProcess.add(start);
-        while (!toProcess.isEmpty()) {
-            DiagramNode node = toProcess.poll();
-            if (skippedNodes.contains(node)) continue;
-            skippedNodes.add(node);
-            for (ExecutionPath afterPath : node.getNodeAfterPaths()) {
-                if (afterPath.getOther() != null)
-                    toProcess.add(afterPath.getOther());
-            }
-        }
+        if(start != null)
+            skippedNodes.add(start);
     }
 }

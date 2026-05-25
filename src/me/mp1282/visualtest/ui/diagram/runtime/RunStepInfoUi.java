@@ -50,10 +50,11 @@ public class RunStepInfoUi extends VBox {
         protected void updateItem(ObjectSnapshot snapshot, boolean empty) {
             super.updateItem(snapshot, empty);
 
-            if(snapshot == null || empty) {
+            if (snapshot == null || empty) {
                 setText(null);
             } else {
-                setText(snapshot.getObject().toString());
+                Object obj = snapshot.getObject();
+                setText(obj != null ? obj.toString() : "null");
             }
         }
     }

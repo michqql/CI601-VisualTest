@@ -5,6 +5,10 @@ import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.diagram.node.data.ConstantNodeData;
 import me.mp1282.visualtest.system.diagram.runtime.ExecuteTask;
 import me.mp1282.visualtest.system.executable.Executable;
+import me.mp1282.visualtest.system.executable.MethodExecutable;
+import me.mp1282.visualtest.system.inbuilt.InbuiltMethodExecutable;
+import me.mp1282.visualtest.system.inbuilt.InbuiltMethodRepository;
+import me.mp1282.visualtest.system.inbuilt.category.BooleanLogicInbuiltMethods;
 import me.mp1282.visualtest.system.inbuilt.special.BranchExecutable;
 import me.mp1282.visualtest.system.inbuilt.special.ConstantExecutable;
 import me.mp1282.visualtest.system.inbuilt.special.ForLoopExecutable;
@@ -33,7 +37,7 @@ public class TestExecuteTask {
 
     /* --- Topological sort (createExecutionOrder) --- */
 
-    /* A→B→C via execution paths; execution order must be A, B, C */
+    /* A->B->C via execution paths; execution order must be A, B, C */
     @Test
     public void testLinearChainOrder() {
         DiagramNode a = makeNode(new ConstantExecutable());
@@ -54,7 +58,7 @@ public class TestExecuteTask {
         Assert.assertSame(c, order.get(2));
     }
 
-    /* Data edge: Constant output → RangeCheck input forces Constant to appear first */
+    /* Data edge: Constant output -> RangeCheck input forces Constant to appear first */
     @Test
     public void testDataEdgeOrdering() {
         DiagramNode src  = makeNode(new ConstantExecutable());   /* 1 output */
@@ -69,12 +73,12 @@ public class TestExecuteTask {
         Assert.assertTrue("src must precede dest", order.indexOf(src) < order.indexOf(dest));
     }
 
-    /* Both a data edge (A→B) and an execution path (C→B) constrain B to come last */
+    /* Both a data edge (A->B) and an execution path (C->B) constrain B to come last */
     @Test
     public void testMixedEdgesOrdering() {
-        DiagramNode a = makeNode(new ConstantExecutable());   /* data output → b */
+        DiagramNode a = makeNode(new ConstantExecutable());   /* data output -> b */
         DiagramNode b = makeNode(new RangeCheckExecutable()); /* depends on a (data) and c (exec) */
-        DiagramNode c = makeNode(new ConstantExecutable());   /* exec path → b */
+        DiagramNode c = makeNode(new ConstantExecutable());   /* exec path -> b */
         diagram.addDiagramNode(a);
         diagram.addDiagramNode(b);
         diagram.addDiagramNode(c);
@@ -153,7 +157,7 @@ public class TestExecuteTask {
         Assert.assertEquals(42, task.getOutputPortValue(constNode.getOutputs().get(0)));
     }
 
-    /* After Branch(null input → false branch): true-path node is skipped, false-path is not */
+    /* After Branch (null input -> false branch): true-path node is skipped, false-path is not */
     @Test
     public void testBranchSkipPropagation() throws Exception {
         DiagramNode branchNode = makeNode(new BranchExecutable());
@@ -162,7 +166,7 @@ public class TestExecuteTask {
         diagram.addDiagramNode(branchNode);
         diagram.addDiagramNode(trueNode);
         diagram.addDiagramNode(falseNode);
-        /* null input → false branch chosen, so true-path is skipped */
+        /* null input -> false branch chosen, so true-path is skipped */
         diagram.connectExecutionPath(branchNode, BranchExecutable.TRUE_BRANCH,  trueNode);
         diagram.connectExecutionPath(branchNode, BranchExecutable.FALSE_BRANCH, falseNode);
 
@@ -171,6 +175,42 @@ public class TestExecuteTask {
 
         Assert.assertTrue(task.getSkippedNodes().contains(trueNode));
         Assert.assertFalse(task.getSkippedNodes().contains(falseNode));
+    }
+
+    /* After Branch (null input -> FALSE branch): TRUE path node is skipped, FALSE path is not,
+     * OR node is skipped because TRUE path was skipped
+     */
+    @Test
+    public void testBranchSkipPropagationToBothNode() throws Exception {
+        DiagramNode branchNode = makeNode(new BranchExecutable());
+        DiagramNode trueNode   = makeNode(new ConstantExecutable());
+        DiagramNode falseNode  = makeNode(new ConstantExecutable());
+        DiagramNode orNode     = makeNode(new MethodExecutable(
+                BooleanLogicInbuiltMethods.class.getDeclaredMethod("or", boolean.class, boolean.class)) {});
+        diagram.addDiagramNode(branchNode);
+        diagram.addDiagramNode(trueNode);
+        diagram.addDiagramNode(falseNode);
+        diagram.addDiagramNode(orNode);
+        /* null input -> false branch chosen, so true-path is skipped */
+        diagram.connectExecutionPath(branchNode, BranchExecutable.TRUE_BRANCH,  trueNode);
+        diagram.connectExecutionPath(branchNode, BranchExecutable.FALSE_BRANCH, falseNode);
+        /* TRUE & FALSE input -> or node */
+        diagram.connectDataPorts(trueNode.getOutputs().getFirst(), orNode.getInputs().get(0));
+        diagram.connectDataPorts(falseNode.getOutputs().getFirst(), orNode.getInputs().get(1));
+
+        ExecuteTask task = new ExecuteTask(diagram);
+        task.step(LOG); /* step Branch */
+
+        Assert.assertTrue(task.getSkippedNodes().contains(trueNode));
+        Assert.assertFalse(task.getSkippedNodes().contains(falseNode));
+        Assert.assertFalse(task.getSkippedNodes().contains(orNode));
+
+        while(task.canStep())
+            task.step(LOG);
+
+        Assert.assertTrue(task.getSkippedNodes().contains(trueNode));
+        Assert.assertFalse(task.getSkippedNodes().contains(falseNode));
+        Assert.assertTrue(task.getSkippedNodes().contains(orNode));
     }
 
     /* --- ForLoop --- */
@@ -182,7 +222,7 @@ public class TestExecuteTask {
         DiagramNode doneNode = makeNode(new ConstantExecutable());
         diagram.addDiagramNode(loopNode);
         diagram.addDiagramNode(doneNode);
-        /* DONE path → doneNode; LOOP path unconnected (null input → count=0) */
+        /* DONE path -> doneNode; LOOP path unconnected (null input -> count=0) */
         diagram.connectExecutionPath(loopNode, ForLoopExecutable.DONE_INDEX, doneNode);
 
         ExecuteTask task = new ExecuteTask(diagram);
@@ -196,7 +236,7 @@ public class TestExecuteTask {
     /* ForLoop with count=3: body node executed inline, marked skipped; done path taken */
     @Test
     public void testForLoopNIterations() throws Exception {
-        /* countNode outputs 3 → loopNode input */
+        /* countNode outputs 3 -> loopNode input */
         DiagramNode countNode = makeNode(new ConstantExecutable());
         ((ConstantNodeData) countNode.getData()).constantProperty().set(3);
 
@@ -209,7 +249,7 @@ public class TestExecuteTask {
         diagram.addDiagramNode(bodyNode);
         diagram.addDiagramNode(doneNode);
 
-        /* Data edge: countNode → loopNode provides the iteration count */
+        /* Data edge: countNode -> loopNode provides the iteration count */
         diagram.connectDataPorts(countNode.getOutputs().get(0), loopNode.getInputs().get(0));
         /* Execution paths */
         diagram.connectExecutionPath(loopNode, ForLoopExecutable.LOOP_INDEX, bodyNode);

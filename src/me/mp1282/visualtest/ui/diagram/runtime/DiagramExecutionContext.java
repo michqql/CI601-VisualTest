@@ -10,6 +10,9 @@ import me.mp1282.visualtest.system.diagram.runtime.ExecuteTask;
 import me.mp1282.visualtest.system.diagram.runtime.RunStep;
 import me.mp1282.visualtest.system.diagram.runtime.RuntimeEnvironmentService;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Bridges the shared {@link RuntimeEnvironmentService} to a single diagram's UI layer.
  * Filters the global run-step list to only steps for this diagram, and tracks when
@@ -28,17 +31,28 @@ public class DiagramExecutionContext {
         this.runStepList = FXCollections.observableArrayList();
         this.lastCompletedTask = new SimpleObjectProperty<>();
 
-        /* Filter incoming run steps to only those belonging to this diagram */
+        /* Filter incoming run steps to only those belonging to this diagram.
+         *
+         * bindListThreadSafe uses setAll(), which JavaFX batches into a single REPLACE
+         * change (wasAdded && wasRemoved both true). Handling wasAdded then wasRemoved
+         * in the same iteration would add duplicates and then wipe the list. Instead:
+         *   - pure ADD  → append only the new steps
+         *   - anything with a REMOVE (replace or clear) → rebuild from the full source
+         */
         runtime.getRunStepList().addListener((ListChangeListener<RunStep>) change -> {
             while (change.next()) {
-                if (change.wasAdded()) {
+                if (change.wasAdded() && !change.wasRemoved()) {
                     for (RunStep step : change.getAddedSubList()) {
                         if (step.getDiagram() == diagram)
                             runStepList.add(step);
                     }
-                }
-                if (change.wasRemoved()) {
-                    runStepList.clear();
+                } else if (change.wasRemoved()) {
+                    List<RunStep> filtered = new ArrayList<>();
+                    for (RunStep step : change.getList()) {
+                        if (step.getDiagram() == diagram)
+                            filtered.add(step);
+                    }
+                    runStepList.setAll(filtered);
                 }
             }
         });

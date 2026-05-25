@@ -22,21 +22,21 @@ public class TestSwitchExecutable {
         data.getCases().get(1).valueProperty().set("world");
     }
 
-    /* Input matches first case → returns 0 */
+    /* Input matches first case -> returns 0 */
     @Test
     public void testMatchingCaseChosen() {
         int index = sw.getChosenBranchIndex(new Object[]{"hello"}, data);
         Assert.assertEquals(0, index);
     }
 
-    /* Input matches second case → returns 1 */
+    /* Input matches second case -> returns 1 */
     @Test
     public void testSecondCaseChosen() {
         int index = sw.getChosenBranchIndex(new Object[]{"world"}, data);
         Assert.assertEquals(1, index);
     }
 
-    /* Input matches no case → returns caseCount (DEFAULT index) */
+    /* Input matches no case -> returns caseCount (DEFAULT index) */
     @Test
     public void testNoMatchDefaultChosen() {
         int index = sw.getChosenBranchIndex(new Object[]{"unknown"}, data);
@@ -48,7 +48,7 @@ public class TestSwitchExecutable {
     public void testEmptyCaseValueSkipped() {
         data.getCases().get(0).valueProperty().set(""); /* blank — must not match */
         int index = sw.getChosenBranchIndex(new Object[]{""}, data);
-        Assert.assertEquals(sw.getCaseCount(), index); /* → DEFAULT */
+        Assert.assertEquals(sw.getCaseCount(), index); /* -> DEFAULT */
     }
 
     /* If NodeData is not SwitchNodeData, must fall through to DEFAULT */
@@ -87,7 +87,7 @@ public class TestSwitchExecutable {
         Assert.assertEquals(sw.getCaseCount(), forNode.getCaseCount());
     }
 
-    /* getExtraConfig() → restoreFromConfig() preserves caseCount */
+    /* getExtraConfig() -> restoreFromConfig() preserves caseCount */
     @Test
     public void testExtraConfigRoundTrip() {
         SwitchExecutable sw5 = new SwitchExecutable(5);

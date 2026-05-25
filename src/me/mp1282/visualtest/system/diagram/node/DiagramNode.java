@@ -21,7 +21,10 @@ public class DiagramNode extends Identifiable {
     private final List<OutputReturn> outputs;
     /* Single incoming execution path port */
     private final ExecutionPath nodeBefore;
-    /* Outgoing execution path ports — size driven by executable.getExecutionPathOutputCount() */
+    /* Outgoing execution path ports.
+     * Size initially driven by
+     * executable.getExecutionPathOutputCount()
+     */
     private final List<ExecutionPath> nodeAfterPaths;
 
     /* Position data */

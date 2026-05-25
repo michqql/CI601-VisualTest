@@ -70,7 +70,7 @@ public class RuntimeUi extends VBox {
     }
 
     private void handleRunStepSelect(RunStep step) {
-        runStepInfo.setRunStep(step);
+        if (step != null) runStepInfo.setRunStep(step);
     }
 
     private void handleRunDiagram(Diagram diagram) {

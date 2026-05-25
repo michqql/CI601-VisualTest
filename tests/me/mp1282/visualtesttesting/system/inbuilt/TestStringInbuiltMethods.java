@@ -92,7 +92,7 @@ public class TestStringInbuiltMethods {
 
     @Test
     public void testReplace() {
-        Assert.assertEquals("hXllX",    StringInbuiltMethods.replace("hello", "o", "X"));
+        Assert.assertEquals("hellX",    StringInbuiltMethods.replace("hello", "o", "X"));
         Assert.assertEquals("hi world", StringInbuiltMethods.replace("hello world", "hello", "hi"));
         Assert.assertEquals("hello",    StringInbuiltMethods.replace("hello", "x", "y"));
     }

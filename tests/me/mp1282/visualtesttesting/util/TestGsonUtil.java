@@ -14,21 +14,21 @@ public class TestGsonUtil {
         Assert.assertEquals("default", result);
     }
 
-    /* valid JsonPrimitive(42) → extraction function applied, returns 42 */
+    /* valid JsonPrimitive(42) -> extraction function applied, returns 42 */
     @Test
     public void testValidIntElementExtracted() {
         int result = GsonUtil.getAsOrDefault(new JsonPrimitive(42), e -> e.getAsInt(), 0);
         Assert.assertEquals(42, result);
     }
 
-    /* valid JsonPrimitive("hello") → extraction function applied, returns "hello" */
+    /* valid JsonPrimitive("hello") -> extraction function applied, returns "hello" */
     @Test
     public void testValidStringElementExtracted() {
         String result = GsonUtil.getAsOrDefault(new JsonPrimitive("hello"), e -> e.getAsString(), "");
         Assert.assertEquals("hello", result);
     }
 
-    /* valid JsonPrimitive(true) → extraction function applied, returns true */
+    /* valid JsonPrimitive(true) -> extraction function applied, returns true */
     @Test
     public void testValidBooleanElementExtracted() {
         boolean result = GsonUtil.getAsOrDefault(new JsonPrimitive(true), e -> e.getAsBoolean(), false);

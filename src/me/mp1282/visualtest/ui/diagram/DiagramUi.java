@@ -174,6 +174,14 @@ public class DiagramUi extends Pane {
 
         /* When a data port is clicked, call into the connection helper to handle connecting data ports */
         ui.addEventHandler(DataPortMouseEvent.CLICK, connectionHelper::onDataPortComponentClickEvent);
+        /* Track which port the cursor is over so the preview line can be recoloured */
+        ui.addEventHandler(DataPortMouseEvent.ANY_MOUSE, event -> {
+            javafx.event.EventType<?> t = event.getWrappedMouseEvent().getEventType();
+            if (t == MouseEvent.MOUSE_ENTERED || t == MouseEvent.MOUSE_ENTERED_TARGET)
+                connectionHelper.setHoveredPort(event.getDataPort());
+            else if (t == MouseEvent.MOUSE_EXITED || t == MouseEvent.MOUSE_EXITED_TARGET)
+                connectionHelper.setHoveredPort(null);
+        });
         /* When an execution path port is clicked, call into the connection helper */
         ui.addEventHandler(ExecutionPathPortMouseEvent.CLICK, connectionHelper::onExecutionPathPortClickEvent);
         /* Must use PRESSED over CLICK because:
@@ -245,8 +253,8 @@ public class DiagramUi extends Pane {
     }
 
     /* Handles scroll events:
-     *   CTRL + scroll  → step through zoom levels
-     *   scroll (plain) → pan the diagram (supports trackpad two-finger swipe)
+     *   CTRL + scroll  -> step through zoom levels
+     *   scroll (plain) -> pan the diagram (supports trackpad two-finger swipe)
      */
     private void handleScroll(ScrollEvent e) {
         if (ctrlDown) {

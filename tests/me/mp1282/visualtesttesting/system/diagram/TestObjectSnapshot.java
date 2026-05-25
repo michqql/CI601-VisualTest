@@ -4,9 +4,14 @@ import me.mp1282.visualtest.system.diagram.runtime.ObjectSnapshot;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class TestObjectSnapshot {
 
-    /* Integer round-trip: snapshot → getObject() returns equal value */
+    /* Integer round-trip: snapshot -> getObject() returns equal value */
     @Test
     public void testIntegerRoundTrip() {
         ObjectSnapshot snapshot = new ObjectSnapshot(7);
@@ -44,5 +49,45 @@ public class TestObjectSnapshot {
     public void testGetBytesNonEmpty() {
         ObjectSnapshot snapshot = new ObjectSnapshot(123);
         Assert.assertTrue(snapshot.getBytes().length > 0);
+    }
+
+    @Test
+    public void testListOfIntegers() {
+        List<Integer> listOfIntegers = new ArrayList<>();
+        for(int i = 0; i < 100; ++i) {
+            listOfIntegers.add(i);
+        }
+
+        ObjectSnapshot snapshot = new ObjectSnapshot(listOfIntegers);
+        Object obj = snapshot.getObject();
+        Assert.assertTrue(obj instanceof List<?>);
+        List<?> list = (List<?>) obj;
+        Assert.assertEquals(list.size(), listOfIntegers.size());
+        Object first = list.getFirst();
+        Assert.assertTrue(first instanceof Integer);
+        for(int i = 0; i < 100; ++i) {
+            Assert.assertEquals(i, list.get(i));
+        }
+    }
+
+    @Test
+    public void testMapOfIntegers() {
+        Map<Integer, String> mapOfIntegers = new HashMap<>();
+        for(int i = 0; i < 100; ++i) {
+            mapOfIntegers.put(i, String.valueOf(i));
+        }
+
+        ObjectSnapshot snapshot = new ObjectSnapshot(mapOfIntegers);
+        Object obj = snapshot.getObject();
+        Assert.assertTrue(obj instanceof Map<?,?>);
+        Map<?,?> map = (Map<?,?>) obj;
+        Assert.assertEquals(map.size(), mapOfIntegers.size());
+
+        map.forEach((key, value) -> {
+            Assert.assertTrue(key instanceof Integer);
+            Assert.assertTrue(value instanceof String);
+
+            Assert.assertEquals(String.valueOf(key), value);
+        });
     }
 }

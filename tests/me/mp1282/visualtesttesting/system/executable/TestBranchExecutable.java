@@ -16,28 +16,28 @@ public class TestBranchExecutable {
         branch.init(null);
     }
 
-    /* Boolean true input → TRUE_BRANCH (0) */
+    /* Boolean true input -> TRUE_BRANCH (0) */
     @Test
     public void testTrueBranchChosen() {
         int index = branch.getChosenBranchIndex(new Object[]{true}, new NodeData());
         Assert.assertEquals(BranchExecutable.TRUE_BRANCH, index);
     }
 
-    /* Boolean false input → FALSE_BRANCH (1) */
+    /* Boolean false input -> FALSE_BRANCH (1) */
     @Test
     public void testFalseBranchChosen() {
         int index = branch.getChosenBranchIndex(new Object[]{false}, new NodeData());
         Assert.assertEquals(BranchExecutable.FALSE_BRANCH, index);
     }
 
-    /* Non-boolean object in inputs[0] → FALSE_BRANCH */
+    /* Non-boolean object in inputs[0] -> FALSE_BRANCH */
     @Test
     public void testNonBooleanDefaultsFalse() {
         int index = branch.getChosenBranchIndex(new Object[]{"not a boolean"}, new NodeData());
         Assert.assertEquals(BranchExecutable.FALSE_BRANCH, index);
     }
 
-    /* null in inputs[0] → FALSE_BRANCH */
+    /* null in inputs[0] -> FALSE_BRANCH */
     @Test
     public void testNullInputDefaultsFalse() {
         int index = branch.getChosenBranchIndex(new Object[]{null}, new NodeData());

@@ -5,6 +5,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Point2D;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Line;
+import me.mp1282.visualtest.system.diagram.Diagram;
 import me.mp1282.visualtest.system.diagram.node.DiagramNode;
 import me.mp1282.visualtest.system.diagram.port.IDataPort;
 import me.mp1282.visualtest.system.diagram.port.InputParameter;
@@ -20,8 +21,9 @@ import me.mp1282.visualtest.util.ObservableBounds;
 
 public class ConnectionHelper {
 
-    private static final Color DATA_PORT_LINE_COLOUR      = Color.GREEN;
-    private static final Color EXECUTION_PATH_LINE_COLOUR = Color.GREEN;
+    private static final Color DATA_PORT_LINE_COLOUR         = Color.GREEN;
+    private static final Color DATA_PORT_INVALID_LINE_COLOUR = Color.RED;
+    private static final Color EXECUTION_PATH_LINE_COLOUR    = Color.GREEN;
 
     private final DiagramUi diagramUi;
     private ConnectorHolderUi connectorHolderUi;
@@ -32,6 +34,9 @@ public class ConnectionHelper {
     private final ObjectProperty<IDataPort<?>> dataPortSource;
     private final ObjectProperty<DiagramNodeUi> executionPathSourceNode;
     private int pendingBranchIndex = 0;
+
+    /* The data port currently under the cursor — used to colour the preview line */
+    private IDataPort<?> hoveredPort = null;
 
     public ConnectionHelper(DiagramUi diagramUi) {
         this.diagramUi                   = diagramUi;
@@ -106,7 +111,9 @@ public class ConnectionHelper {
                 connectorHolderUi.rebuildConnectors();
 
                 /* Set source variables back to null as they are no longer needed */
+                hoveredPort = null;
                 dataPortSource.set(null);
+                dataPortConnectionLine.setStroke(DATA_PORT_LINE_COLOUR);
                 /* Unbind the start position of the connecting line */
                 dataPortConnectionLine.startXProperty().unbind();
                 dataPortConnectionLine.startYProperty().unbind();
@@ -192,8 +199,43 @@ public class ConnectionHelper {
         return true;
     }
 
+    /** Called by DiagramUi when the cursor enters or leaves a data port during any operation. */
+    public void setHoveredPort(IDataPort<?> port) {
+        hoveredPort = port;
+        updateLineColor();
+    }
+
+    private void updateLineColor() {
+        if (dataPortSource.get() == null || hoveredPort == null) {
+            dataPortConnectionLine.setStroke(DATA_PORT_LINE_COLOUR);
+            return;
+        }
+        dataPortConnectionLine.setStroke(
+                isHoverCompatible() ? DATA_PORT_LINE_COLOUR : DATA_PORT_INVALID_LINE_COLOUR);
+    }
+
+    /** Returns true if the hovered port is a type-compatible target for the current source. */
+    private boolean isHoverCompatible() {
+        IDataPort<?> src = dataPortSource.get();
+        IDataPort<?> tgt = hoveredPort;
+        if (src == null || tgt == null || src == tgt) return true;
+
+        OutputReturn output;
+        InputParameter input;
+        if (src instanceof OutputReturn o && tgt instanceof InputParameter i) {
+            output = o; input = i;
+        } else if (src instanceof InputParameter i && tgt instanceof OutputReturn o) {
+            output = o; input = i;
+        } else {
+            return false; // output→output or input→input
+        }
+        return Diagram.areDataTypesCompatible(output.getType().getDataType(), input.getType().getDataType());
+    }
+
     public void cancelConnection() {
+        hoveredPort = null;
         dataPortSource.set(null);
+        dataPortConnectionLine.setStroke(DATA_PORT_LINE_COLOUR);
         /* Unbind the start position of the connecting line */
         dataPortConnectionLine.startXProperty().unbind();
         dataPortConnectionLine.startYProperty().unbind();
@@ -224,5 +266,6 @@ public class ConnectionHelper {
         /* Redraw line first before setting visibility to remove visual flicker */
         dataPortConnectionLine.setVisible(dataPortSource.get() != null);
         executionPathConnectionLine.setVisible(executionPathNodeUi != null);
+        updateLineColor();
     }
 }

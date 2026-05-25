@@ -100,8 +100,11 @@ public final class Diagram {
     }
 
     /**
-     * Connects the execution path at {@code branchIndex} of {@code source} to {@code target}.
-     * Returns {@code true} if the connection was made successfully.
+     * Connects the execution path from {@code source @ branchIndex} to {@code target}.
+     * @param source The source node
+     * @param branchIndex The source branch index
+     * @param target The target node
+     * @return {@code true} if the connection was made successfully.
      */
     public boolean connectExecutionPath(DiagramNode source, int branchIndex, DiagramNode target) {
         if(canConnectExecutionPath(source, target) && canConnectDataPorts(source, target)) {
@@ -156,6 +159,8 @@ public final class Diagram {
 
     /* Create a connection between two data ports */
     public boolean connectDataPorts(OutputReturn output, InputParameter input) {
+        if (!areDataTypesCompatible(output.getType().getDataType(), input.getType().getDataType()))
+            return false;
         if(canConnectExecutionPath(output.getParentNode(), input.getParentNode()) &&
                 canConnectDataPorts(output.getParentNode(), input.getParentNode())) {
             output.setTo(input);
@@ -166,6 +171,29 @@ public final class Diagram {
         return false;
     }
 
+    /**
+     * Returns true if a value of {@code outputType} can be assigned to a port expecting
+     * {@code inputType}. Primitive types are normalised to their wrapper equivalents so
+     * that {@code int} and {@code Integer} are treated as compatible.
+     */
+    public static boolean areDataTypesCompatible(Class<?> outputType, Class<?> inputType) {
+        if (outputType == null || inputType == null) return false;
+        return wrap(inputType).isAssignableFrom(wrap(outputType));
+    }
+
+    private static Class<?> wrap(Class<?> c) {
+        if (!c.isPrimitive()) return c;
+        if (c == int.class)     return Integer.class;
+        if (c == long.class)    return Long.class;
+        if (c == double.class)  return Double.class;
+        if (c == float.class)   return Float.class;
+        if (c == boolean.class) return Boolean.class;
+        if (c == byte.class)    return Byte.class;
+        if (c == short.class)   return Short.class;
+        if (c == char.class)    return Character.class;
+        return c;
+    }
+
     /* Removes a connection between two data ports provided one of them */
     public void disconnectDataPort(IDataPort<? extends IDataType> dataPort) {
         if(dataPort.getOther() != null)
@@ -174,7 +202,7 @@ public final class Diagram {
         unsaved.set(true);
     }
 
-    /* Check if connecting source → target via an execution path would create a cycle */
+    /* Check if connecting source -> target via an execution path would create a cycle */
     public boolean canConnectExecutionPath(DiagramNode sourceNode, DiagramNode targetNode) {
         Set<DiagramNode> visitedNodes = new HashSet<>();
         Queue<DiagramNode> nodesToVisit = new LinkedList<>();

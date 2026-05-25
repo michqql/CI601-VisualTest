@@ -25,7 +25,7 @@ public class TestRangeCheckExecutable {
         rangeCheck.init(null);
     }
 
-    /* 5.0 is inside [0, 10] → true */
+    /* 5.0 is inside [0, 10] -> true */
     @Test
     public void testValueInRange() throws Exception {
         Object[] outputs = new Object[1];
@@ -33,7 +33,7 @@ public class TestRangeCheckExecutable {
         Assert.assertEquals(true, outputs[0]);
     }
 
-    /* Boundary: 0.0 is exactly at min → true (inclusive) */
+    /* Boundary: 0.0 is exactly at min -> true (inclusive) */
     @Test
     public void testValueAtMin() throws Exception {
         Object[] outputs = new Object[1];
@@ -41,7 +41,7 @@ public class TestRangeCheckExecutable {
         Assert.assertEquals(true, outputs[0]);
     }
 
-    /* Boundary: 10.0 is exactly at max → true (inclusive) */
+    /* Boundary: 10.0 is exactly at max -> true (inclusive) */
     @Test
     public void testValueAtMax() throws Exception {
         Object[] outputs = new Object[1];
@@ -49,7 +49,7 @@ public class TestRangeCheckExecutable {
         Assert.assertEquals(true, outputs[0]);
     }
 
-    /* -1.0 is below min → false */
+    /* -1.0 is below min -> false */
     @Test
     public void testValueBelowMin() throws Exception {
         Object[] outputs = new Object[1];
@@ -57,7 +57,7 @@ public class TestRangeCheckExecutable {
         Assert.assertEquals(false, outputs[0]);
     }
 
-    /* 11.0 is above max → false */
+    /* 11.0 is above max -> false */
     @Test
     public void testValueAboveMax() throws Exception {
         Object[] outputs = new Object[1];
@@ -65,7 +65,7 @@ public class TestRangeCheckExecutable {
         Assert.assertEquals(false, outputs[0]);
     }
 
-    /* Null min → false */
+    /* Null min -> false */
     @Test
     public void testNullMin() throws Exception {
         Object[] outputs = new Object[1];
@@ -73,7 +73,7 @@ public class TestRangeCheckExecutable {
         Assert.assertEquals(false, outputs[0]);
     }
 
-    /* Null max → false */
+    /* Null max -> false */
     @Test
     public void testNullMax() throws Exception {
         Object[] outputs = new Object[1];
@@ -81,7 +81,7 @@ public class TestRangeCheckExecutable {
         Assert.assertEquals(false, outputs[0]);
     }
 
-    /* Null input value → false */
+    /* Null input value -> false */
     @Test
     public void testNullInput() throws Exception {
         Object[] outputs = new Object[1];
@@ -89,7 +89,7 @@ public class TestRangeCheckExecutable {
         Assert.assertEquals(false, outputs[0]);
     }
 
-    /* Wrong NodeData subtype → false */
+    /* Wrong NodeData subtype -> false */
     @Test
     public void testWrongNodeDataType() throws Exception {
         Object[] outputs = new Object[1];
@@ -97,7 +97,7 @@ public class TestRangeCheckExecutable {
         Assert.assertEquals(false, outputs[0]);
     }
 
-    /* Integer input is accepted as a Number → true when in range */
+    /* Integer input is accepted as a Number -> true when in range */
     @Test
     public void testIntegerInput() throws Exception {
         Object[] outputs = new Object[1];

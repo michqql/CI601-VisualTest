@@ -19,33 +19,33 @@ public class TestGenericTypeConverter {
         T[]                  genericArray;
     }
 
-    /* Plain Class<?> → simple name only */
+    /* Plain Class<?> -> simple name only */
     @Test
     public void testSimpleClass() {
         Assert.assertEquals("String", GenericTypeConverter.typeToString(String.class));
     }
 
-    /* Primitive class → primitive name */
+    /* Primitive class -> primitive name */
     @Test
     public void testPrimitiveClass() {
         Assert.assertEquals("int", GenericTypeConverter.typeToString(int.class));
     }
 
-    /* ParameterizedType: List<String> → "List<String>" */
+    /* ParameterizedType: List<String> -> "List<String>" */
     @Test
     public void testParameterizedType() throws Exception {
         Type type = TypeHolder.class.getDeclaredField("listString").getGenericType();
         Assert.assertEquals("List<String>", GenericTypeConverter.typeToString(type));
     }
 
-    /* ParameterizedType with two args: Map<String, Integer> → "Map<String, Integer>" */
+    /* ParameterizedType with two args: Map<String, Integer> -> "Map<String, Integer>" */
     @Test
     public void testNestedParameterizedType() throws Exception {
         Type type = TypeHolder.class.getDeclaredField("mapStringInt").getGenericType();
         Assert.assertEquals("Map<String, Integer>", GenericTypeConverter.typeToString(type));
     }
 
-    /* GenericArrayType: T[] → result ends with "[]" */
+    /* GenericArrayType: T[] -> result ends with "[]" */
     @Test
     public void testGenericArrayType() throws Exception {
         Type type = TypeHolder.class.getDeclaredField("genericArray").getGenericType();

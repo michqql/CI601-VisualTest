@@ -73,7 +73,7 @@ public class SwitchExecutableSkin extends DefaultExecutableSkin {
         if (!(getSkinnable().getNode().getData() instanceof SwitchNodeData data))
             return super.execPathPortNode(exe, branchIndex);
 
-        /* IN port or DEFAULT port → default rendering */
+        /* IN port or DEFAULT port -> default rendering */
         if (branchIndex < 0 || branchIndex >= data.getCases().size())
             return super.execPathPortNode(exe, branchIndex);
 

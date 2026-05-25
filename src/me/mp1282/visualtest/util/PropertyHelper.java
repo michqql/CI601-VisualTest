@@ -48,7 +48,8 @@ public class PropertyHelper {
     }
 
     public static <T> void bindList(ObservableList<T> source, ObservableList<T> target) {
-        source.addListener((ListChangeListener<? super T>) change -> target.setAll(change.getList()));
+        source.addListener((ListChangeListener<? super T>) change ->
+                target.setAll(change.getList()));
     }
 
     public static <T> void bindListThreadSafe(ObservableList<T> source, ObservableList<T> target) {

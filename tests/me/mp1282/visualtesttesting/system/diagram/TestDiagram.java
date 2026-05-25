@@ -70,7 +70,7 @@ public class TestDiagram {
 
     /* --- Execution path connections --- */
 
-    /* connectExecutionPath links source branch 0 → target */
+    /* connectExecutionPath links source branch 0 -> target */
     @Test
     public void testConnectExecutionPath() {
         DiagramNode a = makeNode(new ConstantExecutable());
@@ -85,7 +85,7 @@ public class TestDiagram {
         Assert.assertSame(a, b.getNodeBefore().getOther());
     }
 
-    /* A→B already connected; connecting B→A must be rejected (cycle) */
+    /* A->B already connected; connecting B->A must be rejected (cycle) */
     @Test
     public void testConnectExecutionPathCycleRejected() {
         DiagramNode a = makeNode(new ConstantExecutable());
@@ -170,22 +170,32 @@ public class TestDiagram {
         Assert.assertSame(src.getOutputs().get(0),  dest.getInputs().get(0).getFrom());
     }
 
-    /* Cyclic data port link is rejected */
+    /* Tests that a cyclic data port connection is rejected */
     @Test
     public void testConnectDataPortsCycleRejected() {
-        /* src → dest via data port, then attempt dest → src */
+        /* src -> dest via data port, then attempt dest -> src */
         DiagramNode src  = makeNode(new RangeCheckExecutable()); /* 1 input, 1 output */
         DiagramNode dest = makeNode(new RangeCheckExecutable()); /* 1 input, 1 output */
         diagram.addDiagramNode(src);
         diagram.addDiagramNode(dest);
-        diagram.connectDataPorts(src.getOutputs().get(0), dest.getInputs().get(0));
 
-        boolean connected = diagram.connectDataPorts(
-                dest.getOutputs().get(0),
-                src.getInputs().get(0)
-        );
+        boolean connected = diagram.connectDataPorts(src.getOutputs().get(0), dest.getInputs().get(0));
+
+        Assert.assertTrue(connected);
+        /* Asserts initial connection state after single connection */
+        Assert.assertNull(src.getInputs().get(0).getFrom());
+        Assert.assertNotNull(src.getOutputs().get(0).getTo());
+        Assert.assertNotNull(dest.getInputs().get(0).getFrom());
+        Assert.assertNull(dest.getOutputs().get(0).getTo());
+
+        connected = diagram.connectDataPorts(dest.getOutputs().get(0), src.getInputs().get(0));
 
         Assert.assertFalse(connected);
+        /* Checks that connection state has not changed */
+        Assert.assertNull(src.getInputs().get(0).getFrom());
+        Assert.assertNotNull(src.getOutputs().get(0).getTo());
+        Assert.assertNotNull(dest.getInputs().get(0).getFrom());
+        Assert.assertNull(dest.getOutputs().get(0).getTo());
     }
 
     /* disconnectDataPort severs the link from both sides */
